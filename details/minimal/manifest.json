@@ -1,0 +1,14 @@
+{
+    "id": "minimal",
+    "name": "Minimal",
+    "version": "1.0.0",
+    "description": "A refined, minimalist template focusing on the beauty of subtraction and clean typography.",
+    "category": "general",
+    "author": {
+      "name": "Doujin LP Builder AI"
+    },
+    "template": {
+      "engine": "handlebars",
+      "version": "4.7.8"
+    }
+  }

@@ -1,0 +1,284 @@
+{
+    "formSchema": {
+      "sections": [
+        {
+          "id": "meta",
+          "title": "基本情報",
+          "icon": "📝",
+          "description": "サイトの基本設定",
+          "fields": [
+            {
+              "id": "siteTitle",
+              "type": "text",
+              "label": "サイトタイトル (ブラウザタブ用)",
+              "default": "Minimal - New Release"
+            },
+            {
+              "id": "seoDescription",
+              "type": "textarea",
+              "label": "SEO用説明文",
+              "default": "余白とタイポグラフィを重視したミニマルなLPテンプレート。"
+            }
+          ]
+        },
+        {
+          "id": "design",
+          "title": "デザイン設定",
+          "icon": "🎨",
+          "description": "配色は白ベースのミニマルスタイルを推奨",
+          "fields": [
+            {
+              "id": "primaryColor",
+              "type": "color",
+              "label": "メインカラー (背景など)",
+              "default": "#ffffff"
+            },
+            {
+              "id": "secondaryColor",
+              "type": "color",
+              "label": "文字色・本文",
+              "default": "#333333"
+            },
+            {
+              "id": "accentColor",
+              "type": "color",
+              "label": "アクセントカラー (ボタン・強調)",
+              "default": "#000000"
+            },
+            {
+              "id": "heroImage",
+              "type": "image",
+              "label": "ヒーロー画像 (背景)",
+              "description": "トップの大きな背景画像"
+            },
+            {
+              "id": "heroPositionX",
+              "type": "select",
+              "label": "背景位置（横）",
+              "options": [
+                { "value": "left", "label": "左寄せ" },
+                { "value": "center", "label": "中央" },
+                { "value": "right", "label": "右寄せ" }
+              ],
+              "default": "center"
+            },
+            {
+              "id": "heroPositionY",
+              "type": "select",
+              "label": "背景位置（縦）",
+              "options": [
+                { "value": "top", "label": "上寄せ" },
+                { "value": "center", "label": "中央" },
+                { "value": "bottom", "label": "下寄せ" }
+              ],
+              "default": "center"
+            },
+            {
+              "id": "heroPositionY_mobile",
+              "type": "select",
+              "label": "背景位置（縦・モバイル）",
+              "description": "スマホでの縦位置。横長画像は上寄せ推奨",
+              "options": [
+                { "value": "top", "label": "上寄せ" },
+                { "value": "center", "label": "中央" },
+                { "value": "bottom", "label": "下寄せ" }
+              ],
+              "default": "top"
+            },
+            {
+              "id": "overlayColor",
+              "type": "color",
+              "label": "オーバーレイ色",
+              "default": "#ffffff"
+            },
+            {
+              "id": "overlayOpacity",
+              "type": "slider",
+              "label": "オーバーレイ濃度",
+              "min": 0,
+              "max": 100,
+              "step": 5,
+              "unit": "%",
+              "default": 50
+            }
+          ]
+        },
+        {
+          "id": "hero",
+          "title": "トップ画像エリア",
+          "icon": "🖼️",
+          "description": "ファーストビューの設定",
+          "fields": [
+            {
+              "id": "heroBadge",
+              "type": "text",
+              "label": "上部バッジ (例: New Release)",
+              "default": "2025.04.27 Release"
+            },
+            {
+              "id": "heroTitle",
+              "type": "text",
+              "label": "メインタイトル",
+              "default": "Minimal Aesthetics"
+            }
+          ]
+        },
+        {
+          "id": "about",
+          "title": "作品紹介",
+          "icon": "📖",
+          "description": "コンセプトやあらすじ",
+          "fields": [
+            {
+              "id": "aboutTitle",
+              "type": "text",
+              "label": "セクションタイトル",
+              "default": "Concept"
+            },
+            {
+              "id": "aboutText",
+              "type": "textarea",
+              "label": "本文",
+              "description": "改行はそのまま反映されます",
+              "rows": 5,
+              "default": "余計な装飾を削ぎ落とし、本質だけを残す。\n音と空間の調和を目指したコンセプトアルバム。"
+            }
+          ]
+        },
+        {
+          "id": "release",
+          "title": "頒布情報",
+          "icon": "💿",
+          "description": "アルバム名や価格",
+          "fields": [
+            {
+              "id": "albumTitle",
+              "type": "text",
+              "label": "アルバム名",
+              "default": "Minimal Aesthetics"
+            },
+            {
+              "id": "artistName",
+              "type": "text",
+              "label": "アーティスト名",
+              "default": "Artist Name"
+            },
+            {
+              "id": "releaseInfo",
+              "type": "array",
+              "label": "頒布情報",
+              "description": "価格・発売日など自由に追加できます",
+              "itemTemplate": {
+                "label": "Price",
+                "value": "¥1,500"
+              }
+            }
+          ]
+        },
+        {
+          "id": "tracks",
+          "title": "トラックリスト",
+          "icon": "🎵",
+          "description": "収録曲のリスト",
+          "fields": [
+            {
+              "id": "tracks",
+              "type": "array",
+              "label": "楽曲一覧",
+              "itemTemplate": {
+                "trackNumber": "01",
+                "title": "Track Title",
+                "artist": "Composer",
+                "duration": "0:00"
+              }
+            }
+          ]
+        },
+        {
+          "id": "media",
+          "title": "メディア",
+          "icon": "🎥",
+          "description": "YouTube等の埋め込み",
+          "fields": [
+            {
+              "id": "youtubeUrl",
+              "type": "text",
+              "label": "YouTube URL",
+              "description": "動画のURLを入力"
+            }
+          ]
+        },
+        {
+          "id": "credits",
+          "title": "クレジット",
+          "icon": "👥",
+          "description": "制作スタッフ・参加者のクレジット表記",
+          "fields": [
+            {
+              "id": "credits",
+              "type": "array",
+              "label": "クレジット一覧",
+              "description": "役職・氏名・SNSリンクを自由に追加できます",
+              "itemTemplate": {
+                "role": "Produce",
+                "name": "Artist Name",
+                "link1Label": "Twitter",
+                "link1Url": "https://twitter.com/username",
+                "link2Label": "",
+                "link2Url": "",
+                "link3Label": "",
+                "link3Url": ""
+              }
+            }
+          ]
+        },
+        {
+          "id": "links",
+          "title": "ショップリンク",
+          "icon": "🛒",
+          "description": "通販サイトへのリンク",
+          "fields": [
+            {
+              "id": "shopLinks",
+              "type": "array",
+              "label": "リンク一覧",
+              "itemTemplate": {
+                "label": "Store Name",
+                "url": "https://"
+              }
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "title": "フッター",
+          "icon": "👣",
+          "description": "著作権表記・ロゴ・リンク",
+          "fields": [
+            {
+              "id": "footerLogo",
+              "type": "image",
+              "label": "レーベルロゴ",
+              "description": "フッター中央に表示されるロゴ画像"
+            },
+            {
+              "id": "footerLinks",
+              "type": "array",
+              "label": "フッターリンク",
+              "description": "レーベルサイトやSNSへのリンク",
+              "itemTemplate": {
+                "label": "Label Site",
+                "url": "https://"
+              }
+            },
+            {
+              "id": "footerCopyright",
+              "type": "text",
+              "label": "コピーライト",
+              "default": "© 2025 Artist Name"
+            }
+          ]
+        }
+      ]
+    }
+  }

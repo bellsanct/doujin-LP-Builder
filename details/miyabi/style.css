@@ -1,0 +1,377 @@
+/* Base Styles */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", "YuMincho", "Times New Roman", serif;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+  transition: opacity 0.3s;
+}
+
+a:hover {
+  opacity: 0.7;
+}
+
+/* Layout Container */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* Hero Section with Vertical Writing */
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 600px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: var(--overlay-color);
+  opacity: var(--overlay-opacity);
+  z-index: 0;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Vertical Writing Mode for Hero */
+.hero-inner-frame {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-height: 80vh;
+}
+
+.hero-title {
+  font-size: 4rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.2em;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  font-family: "Yu Mincho", serif;
+  border-left: 1px solid var(--accent-color); /* Top line in vertical mode */
+  padding-left: 20px;
+}
+
+.badge-container {
+  display: flex;
+  justify-content: center;
+}
+
+.hero-badge {
+  display: inline-block;
+  background-color: var(--accent-color);
+  color: #fff;
+  padding: 6px 16px;
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  font-weight: bold;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  font-family: sans-serif;
+}
+
+/* Info Bar */
+.info-bar {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  padding: 15px 0;
+  text-align: center;
+  font-family: sans-serif;
+  font-size: 0.9rem;
+}
+
+.info-item {
+  margin: 0 15px;
+  display: inline-block;
+}
+
+.info-label {
+  color: var(--accent-color);
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 80px;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 2rem;
+  margin: 0 0 10px 0;
+  letter-spacing: 0.1em;
+}
+
+.title-decoration {
+  width: 40px;
+  height: 2px;
+  background-color: var(--accent-color);
+  margin: 0 auto;
+}
+
+/* About Text - Unified Standard */
+.about-text {
+  white-space: pre-wrap;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: 1.1rem;
+}
+
+/* Release Section */
+.release-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.jacket-container {
+  max-width: 400px;
+  width: 100%;
+}
+
+.jacket-image {
+  width: 100%;
+  height: auto;
+  border: 2px solid var(--accent-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.release-info-area {
+  text-align: center;
+}
+
+.album-title-text {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+  letter-spacing: 0.1em;
+}
+
+.artist-name-text {
+  font-size: 1.1rem;
+  opacity: 0.7;
+  margin: 0;
+  font-family: sans-serif;
+}
+
+/* Track List */
+.track-list {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.track-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  transition: background-color 0.2s;
+}
+
+.track-item:hover {
+  background-color: rgba(0,0,0,0.03);
+}
+
+.track-left {
+  display: flex;
+  align-items: baseline;
+  gap: 15px;
+}
+
+.track-num {
+  font-family: serif;
+  color: var(--accent-color);
+  font-weight: bold;
+  min-width: 2em;
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.track-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.track-artist {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-family: sans-serif;
+}
+
+.track-time {
+  font-family: monospace;
+  opacity: 0.6;
+}
+
+/* Buttons */
+.shop-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 30px;
+  background-color: transparent;
+  border: 1px solid var(--secondary-color);
+  color: var(--secondary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: sans-serif;
+  transition: all 0.3s;
+}
+
+.btn:hover {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #fff;
+}
+
+/* Credits Grid */
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 30px;
+  text-align: center;
+}
+
+.credit-role {
+  font-size: 0.8rem;
+  color: var(--accent-color);
+  margin-bottom: 5px;
+  font-family: sans-serif;
+}
+
+.credit-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.credit-links {
+  font-size: 0.8rem;
+}
+
+/* Footer */
+.footer {
+  background-color: var(--secondary-color);
+  color: #fff;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.footer-logo img {
+  max-width: 150px;
+  margin-bottom: 20px;
+  filter: brightness(0) invert(1);
+}
+
+.footer-links {
+  margin-bottom: 20px;
+}
+
+.footer-links a {
+  color: #fff;
+  margin: 0 10px;
+  font-size: 0.9rem;
+}
+
+.copyright {
+  font-size: 0.8rem;
+  opacity: 0.5;
+  font-family: sans-serif;
+}
+
+/* Video */
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  /* Mobile-specific background position (Required) */
+  .hero {
+    background-position: center var(--hero-position-y-mobile) !important;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .info-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .info-item {
+    margin: 2px 0;
+  }
+
+  .track-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .track-right {
+    width: 100%;
+    text-align: right;
+    font-size: 0.8rem;
+  }
+}

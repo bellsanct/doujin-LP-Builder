@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{siteTitle}}</title>
+  <meta name="description" content="{{seoDescription}}">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --primary-color: {{primaryColor}};
+      --secondary-color: {{secondaryColor}};
+      --accent-color: {{accentColor}};
+      --overlay-color: {{overlayColor}};
+      --overlay-opacity: calc({{overlayOpacity}} / 100);
+      --hero-position-y-mobile: {{heroPositionY_mobile}};
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero" {{#if heroImage}}style="background-image: url('{{heroImage}}'); background-position: {{heroPositionX}} {{heroPositionY}};"{{/if}}>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      {{#if heroBadge}}
+      <div class="hero-badge-container">
+        <span class="hero-badge">{{heroBadge}}</span>
+      </div>
+      {{/if}}
+      <h1 class="hero-title">{{heroTitle}}</h1>
+    </div>
+    <div class="scroll-indicator">
+      <span>SCROLL</span>
+      <div class="line"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <section id="about" class="section gothic-border">
+      <div class="section-inner">
+        <h2 class="section-title">{{aboutTitle}}</h2>
+        <div class="section-content">
+          <p class="about-text">{{aboutText}}</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="release" class="section">
+      <div class="section-inner">
+        <h2 class="section-title">Spec</h2>
+        <div class="release-layout">
+          {{#if jacketImage}}
+          <div class="jacket-area">
+            <img src="{{jacketImage}}" alt="{{albumTitle}}" class="jacket-img">
+          </div>
+          {{/if}}
+
+          <div class="album-info">
+            <h3 class="album-title-sub">{{albumTitle}}</h3>
+            <p class="artist-name">{{artistName}}</p>
+
+            <dl class="info-list">
+              {{#each releaseInfo}}
+              <div class="info-item">
+                <dt>{{label}}</dt>
+                <dd>{{value}}</dd>
+              </div>
+              {{/each}}
+            </dl>
+
+            {{#if shopLinks}}
+            <div class="shop-buttons">
+              {{#each shopLinks}}
+              <a href="{{url}}" target="_blank" class="btn btn-primary">{{label}}</a>
+              {{/each}}
+            </div>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {{#if tracks}}
+    <section id="tracks" class="section gothic-border">
+      <div class="section-inner">
+        <h2 class="section-title">Tracklist</h2>
+        <ul class="track-list">
+          {{#each tracks}}
+          <li class="track-item">
+            <div class="track-left">
+              <span class="track-num">{{trackNumber}}</span>
+              <div class="track-info">
+                <span class="track-title">{{title}}</span>
+                {{#if artist}}<span class="track-artist-sub">{{artist}}</span>{{/if}}
+              </div>
+            </div>
+            <div class="track-right">
+              {{#if duration}}<span class="track-time">{{duration}}</span>{{/if}}
+            </div>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+    </section>
+    {{/if}}
+
+    {{#if youtubeUrl}}
+    <section id="media" class="section">
+      <div class="section-inner">
+        <h2 class="section-title">Movie</h2>
+        <div class="video-container gothic-border">
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/{{extractYouTubeID youtubeUrl}}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+    {{/if}}
+
+    {{#if credits}}
+    <section id="credits" class="section">
+      <div class="section-inner">
+        <h2 class="section-title">Credits</h2>
+        <div class="credits-grid">
+          {{#each credits}}
+          <div class="credit-item gothic-border">
+            <span class="credit-role">{{role}}</span>
+            <span class="credit-name">{{name}}</span>
+            <div class="credit-links">
+              {{#if link1Label}}<a href="{{link1Url}}" target="_blank">{{link1Label}}</a>{{/if}}
+              {{#if link2Label}}<a href="{{link2Url}}" target="_blank">{{link2Label}}</a>{{/if}}
+              {{#if link3Label}}<a href="{{link3Url}}" target="_blank">{{link3Label}}</a>{{/if}}
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+    </section>
+    {{/if}}
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      {{#if footerLogo}}
+      <div class="footer-logo">
+        <img src="{{footerLogo}}" alt="Footer Logo">
+      </div>
+      {{/if}}
+      
+      {{#if footerLinks}}
+      <ul class="footer-links">
+        {{#each footerLinks}}
+        <li><a href="{{url}}" target="_blank">{{label}}</a></li>
+        {{/each}}
+      </ul>
+      {{/if}}
+      
+      <p class="copyright">{{footerCopyright}}</p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+    "id": "miyabi",
+    "name": "Miyabi",
+    "version": "1.0.0",
+    "description": "A Japanese-style aesthetic template featuring vertical typography, ideal for traditional-meets-modern music compilations.",
+    "category": "music",
+    "author": {
+      "name": "Doujin LP Builder AI"
+    },
+    "template": {
+      "engine": "handlebars",
+      "version": "4.7.8"
+    }
+  }

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{siteTitle}}</title>
+  <meta name="description" content="{{seoDescription}}">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --primary-color: {{primaryColor}};
+      --secondary-color: {{secondaryColor}};
+      --accent-color: {{accentColor}};
+      --overlay-color: {{overlayColor}};
+      --overlay-opacity: calc({{overlayOpacity}} / 100);
+      --hero-position-y-mobile: {{heroPositionY_mobile}};
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero" {{#if heroImage}}style="background-image: url('{{heroImage}}'); background-position: {{heroPositionX}} {{heroPositionY}};"{{/if}}>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      {{#if heroBadge}}
+      <div class="hero-badge">{{heroBadge}}</div>
+      {{/if}}
+      <h1 class="hero-title">{{heroTitle}}</h1>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <section id="about" class="section">
+      {{#if aboutTitle}}
+      <h2 class="section-title">{{aboutTitle}}</h2>
+      {{/if}}
+      {{#if aboutText}}
+      <p class="about-text">{{aboutText}}</p>
+      {{/if}}
+    </section>
+
+    <section id="info" class="section info-section">
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Title</span>
+          <span class="info-value">{{albumTitle}}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Artist</span>
+          <span class="info-value">{{artistName}}</span>
+        </div>
+        {{#if releaseInfo}}
+        {{#each releaseInfo}}
+        <div class="info-item">
+          <span class="info-label">{{label}}</span>
+          <span class="info-value">{{value}}</span>
+        </div>
+        {{/each}}
+        {{/if}}
+      </div>
+    </section>
+
+    {{#if tracks}}
+    <section id="tracks" class="section">
+      <h2 class="section-title">Tracklist</h2>
+      <ul class="track-list">
+        {{#each tracks}}
+        <li class="track-item">
+          <div class="track-meta">
+            <span class="track-num">{{trackNumber}}</span>
+          </div>
+          <div class="track-content">
+            <span class="track-name">{{title}}</span>
+            {{#if artist}}<span class="track-artist">{{artist}}</span>{{/if}}
+          </div>
+          <div class="track-time-col">
+            {{#if duration}}<span class="track-time">{{duration}}</span>{{/if}}
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{/if}}
+
+    {{#if youtubeUrl}}
+    <section id="media" class="section">
+      <div class="video-container">
+        <iframe src="https://www.youtube.com/embed/{{extractYouTubeID youtubeUrl}}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </section>
+    {{/if}}
+
+    {{#if credits}}
+    <section id="credits" class="section">
+      <h2 class="section-title">Credits</h2>
+      <ul class="credits-list">
+        {{#each credits}}
+        <li class="credit-item">
+          <div class="credit-role">{{role}}</div>
+          <div class="credit-person">
+            <span class="credit-name">{{name}}</span>
+            <div class="credit-links">
+              {{#if link1Label}}
+              <a href="{{link1Url}}" class="credit-link-btn" target="_blank" rel="noopener">{{link1Label}}</a>
+              {{/if}}
+              {{#if link2Label}}
+              <a href="{{link2Url}}" class="credit-link-btn" target="_blank" rel="noopener">{{link2Label}}</a>
+              {{/if}}
+              {{#if link3Label}}
+              <a href="{{link3Url}}" class="credit-link-btn" target="_blank" rel="noopener">{{link3Label}}</a>
+              {{/if}}
+            </div>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{/if}}
+
+    {{#if shopLinks}}
+    <section id="shop" class="section">
+      <div class="shop-list">
+        {{#each shopLinks}}
+        <a href="{{url}}" target="_blank" class="shop-button">{{label}}</a>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
+
+  </div>
+
+  <footer class="footer">
+    {{#if footerLogo}}
+    <div class="footer-logo">
+      <img src="{{footerLogo}}" alt="Label Logo" class="footer-logo-img">
+    </div>
+    {{/if}}
+    {{#if footerLinks}}
+    <div class="footer-links">
+      {{#each footerLinks}}
+      <a href="{{url}}" class="footer-link" target="_blank" rel="noopener">{{label}}</a>
+      {{/each}}
+    </div>
+    {{/if}}
+    <p class="copyright">{{footerCopyright}}</p>
+  </footer>
+
+</body>
+</html>

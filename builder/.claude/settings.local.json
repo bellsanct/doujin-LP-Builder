@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(done)",
+      "Bash(cat:*)",
+      "Bash(node:*)",
+      "Bash(zip:*)",
+      "Bash(tree:*)",
+      "Bash(netstat:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

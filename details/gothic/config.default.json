@@ -1,0 +1,78 @@
+{
+    "siteTitle": "CATHEDRAL OF DOOM - New Gothic Metal Release",
+    "seoDescription": "暗黒と幻想が交差する、至高のゴシック・ハードコアアルバム。",
+    "primaryColor": "#8a0303",
+    "secondaryColor": "#e0e0e0",
+    "accentColor": "#ff0000",
+    "heroImage": "",
+    "heroPositionX": "center",
+    "heroPositionY": "center",
+    "heroPositionY_mobile": "top",
+    "overlayColor": "#000000",
+    "overlayOpacity": 60,
+    "heroBadge": "2025.10.31 Release",
+    "heroTitle": "CATHEDRAL OF DOOM",
+    "aboutTitle": "Introduction",
+    "aboutText": "深淵より響く旋律。\n絶望と救済をテーマにした、全10曲の物語。",
+    "jacketImage": "",
+    "albumTitle": "CATHEDRAL OF DOOM",
+    "artistName": "Gothic Circle",
+    "releaseInfo": [
+      { "label": "Release", "value": "2025.10.31 (M3-2025 Autumn)" },
+      { "label": "Price", "value": "¥1,500 (Event) / ¥1,800 (Shop)" },
+      { "label": "Format", "value": "CD / Digital" }
+    ],
+    "tracks": [
+      {
+        "trackNumber": "I",
+        "title": "Gate of Despair",
+        "artist": "Compose: A",
+        "duration": "2:14"
+      },
+      {
+        "trackNumber": "II",
+        "title": "Bloody Tears",
+        "artist": "Compose: B / Vocal: C",
+        "duration": "4:44"
+      },
+      {
+        "trackNumber": "III",
+        "title": "Eternal Silence",
+        "artist": "Compose: A",
+        "duration": "3:58"
+      }
+    ],
+    "youtubeUrl": "",
+    "credits": [
+      {
+        "role": "Produce & Compose",
+        "name": "Raven",
+        "link1Label": "Twitter",
+        "link1Url": "https://twitter.com/example",
+        "link2Label": "",
+        "link2Url": "",
+        "link3Label": "",
+        "link3Url": ""
+      },
+      {
+        "role": "Illustration",
+        "name": "Crow",
+        "link1Label": "Pixiv",
+        "link1Url": "https://www.pixiv.net/",
+        "link2Label": "",
+        "link2Url": "",
+        "link3Label": "",
+        "link3Url": ""
+      }
+    ],
+    "shopLinks": [
+      { "label": "BOOTH", "url": "#" },
+      { "label": "Bandcamp", "url": "#" }
+    ],
+    "footerLogo": "",
+    "footerLinks": [
+      { "label": "Official Site", "url": "#" },
+      { "label": "Twitter", "url": "#" }
+    ],
+    "footerCopyright": "© 2025 Gothic Circle"
+  }

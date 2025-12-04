@@ -1,0 +1,249 @@
+{
+    "formSchema": {
+      "sections": [
+        {
+          "id": "design",
+          "title": "デザイン設定",
+          "icon": "🎨",
+          "description": "和の世界観を演出する配色設定",
+          "fields": [
+            {
+              "id": "primaryColor",
+              "type": "color",
+              "label": "メイン背景色 (和紙色など)",
+              "default": "#fcf9f2"
+            },
+            {
+              "id": "secondaryColor",
+              "type": "color",
+              "label": "文字色 (墨色)",
+              "default": "#2b2b2b"
+            },
+            {
+              "id": "accentColor",
+              "type": "color",
+              "label": "アクセント色 (朱色など)",
+              "default": "#b91c1c"
+            },
+            {
+              "id": "heroImage",
+              "type": "image",
+              "label": "ヒーロー画像 (背景)",
+              "description": "トップの大きな背景画像"
+            },
+            {
+              "id": "heroPositionX",
+              "type": "select",
+              "label": "背景位置（横）",
+              "options": [
+                { "value": "left", "label": "左寄せ" },
+                { "value": "center", "label": "中央" },
+                { "value": "right", "label": "右寄せ" }
+              ],
+              "default": "center"
+            },
+            {
+              "id": "heroPositionY",
+              "type": "select",
+              "label": "背景位置（縦）",
+              "options": [
+                { "value": "top", "label": "上寄せ" },
+                { "value": "center", "label": "中央" },
+                { "value": "bottom", "label": "下寄せ" }
+              ],
+              "default": "center"
+            },
+            {
+              "id": "heroPositionY_mobile",
+              "type": "select",
+              "label": "背景位置（縦・モバイル）",
+              "description": "スマホでの縦位置。縦書きタイトルの視認性確保のため調整推奨",
+              "options": [
+                { "value": "top", "label": "上寄せ" },
+                { "value": "center", "label": "中央" },
+                { "value": "bottom", "label": "下寄せ" }
+              ],
+              "default": "center"
+            },
+            {
+              "id": "overlayColor",
+              "type": "color",
+              "label": "オーバーレイ色",
+              "default": "#000000"
+            },
+            {
+              "id": "overlayOpacity",
+              "type": "slider",
+              "label": "オーバーレイ濃度",
+              "min": 0,
+              "max": 100,
+              "step": 5,
+              "unit": "%",
+              "default": 40
+            }
+          ]
+        },
+        {
+          "id": "hero",
+          "title": "トップ情報",
+          "icon": "🏠",
+          "fields": [
+            {
+              "id": "heroTitle",
+              "type": "text",
+              "label": "メインタイトル",
+              "description": "縦書きで表示されます"
+            },
+            {
+              "id": "heroBadge",
+              "type": "text",
+              "label": "帯テキスト",
+              "description": "リリースの季節やイベント名など"
+            }
+          ]
+        },
+        {
+          "id": "about",
+          "title": "作品概要",
+          "icon": "📝",
+          "fields": [
+            {
+              "id": "aboutTitle",
+              "type": "text",
+              "label": "セクションタイトル",
+              "default": "Concept"
+            },
+            {
+              "id": "aboutText",
+              "type": "textarea",
+              "label": "説明文",
+              "description": "コンセプトやストーリー"
+            }
+          ]
+        },
+        {
+          "id": "release",
+          "title": "リリース情報",
+          "icon": "💿",
+          "fields": [
+            {
+              "id": "jacketImage",
+              "type": "image",
+              "label": "ジャケット画像",
+              "description": "アルバムジャケット画像（任意）"
+            },
+            {
+              "id": "albumTitle",
+              "type": "text",
+              "label": "アルバム名",
+              "required": true
+            },
+            {
+              "id": "artistName",
+              "type": "text",
+              "label": "アーティスト名"
+            },
+            {
+              "id": "releaseInfo",
+              "type": "array",
+              "label": "頒布情報",
+              "description": "価格・発売日など自由に追加できます",
+              "itemTemplate": {
+                "label": "Event",
+                "value": "M3-2025春"
+              }
+            }
+          ]
+        },
+        {
+          "id": "tracks",
+          "title": "トラックリスト",
+          "icon": "🎵",
+          "fields": [
+            {
+              "id": "tracks",
+              "type": "array",
+              "label": "楽曲一覧",
+              "itemTemplate": {
+                "trackNumber": "壱",
+                "title": "楽曲名",
+                "artist": "作曲者名",
+                "duration": "3:45"
+              }
+            }
+          ]
+        },
+        {
+          "id": "credits",
+          "title": "クレジット",
+          "icon": "👥",
+          "fields": [
+            {
+              "id": "credits",
+              "type": "array",
+              "label": "クレジット一覧",
+              "itemTemplate": {
+                "role": "主催",
+                "name": "名前",
+                "link1Label": "X (Twitter)",
+                "link1Url": "https://twitter.com/",
+                "link2Label": "",
+                "link2Url": "",
+                "link3Label": "",
+                "link3Url": ""
+              }
+            }
+          ]
+        },
+        {
+          "id": "links",
+          "title": "リンク",
+          "icon": "🔗",
+          "fields": [
+            {
+              "id": "shopLinks",
+              "type": "array",
+              "label": "ショップリンク",
+              "itemTemplate": {
+                "label": "BOOTH",
+                "url": "https://"
+              }
+            },
+            {
+              "id": "youtubeUrl",
+              "type": "text",
+              "label": "YouTube URL",
+              "description": "クロスフェード動画など"
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "title": "フッター",
+          "icon": "🦶",
+          "fields": [
+            {
+              "id": "footerLogo",
+              "type": "image",
+              "label": "フッターロゴ"
+            },
+            {
+              "id": "footerLinks",
+              "type": "array",
+              "label": "フッターリンク",
+              "itemTemplate": {
+                "label": "Official Site",
+                "url": "https://"
+              }
+            },
+            {
+              "id": "footerCopyright",
+              "type": "text",
+              "label": "コピーライト",
+              "default": "© 2025 Circle Name"
+            }
+          ]
+        }
+      ]
+    }
+  }

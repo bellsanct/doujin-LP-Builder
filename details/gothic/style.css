@@ -1,0 +1,427 @@
+/* Base Reset & Setup */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: "Times New Roman", "YuMincho", "Hiragino Mincho ProN", serif;
+    background-color: #050505;
+    color: var(--secondary-color);
+    line-height: 1.8;
+    letter-spacing: 0.05em;
+    font-feature-settings: "palt";
+  }
+  
+  a {
+    color: var(--secondary-color);
+    text-decoration: none;
+    transition: opacity 0.3s, color 0.3s;
+  }
+  
+  a:hover {
+    color: var(--accent-color);
+    opacity: 0.8;
+  }
+  
+  ul {
+    list-style: none;
+  }
+  
+  /* Layout */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Hero Section */
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 600px;
+    background-size: cover;
+    background-position: center;
+    background-color: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 2px solid var(--primary-color);
+  }
+  
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--overlay-color);
+    opacity: var(--overlay-opacity);
+    z-index: 0;
+  }
+  
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 0 20px;
+  }
+  
+  .hero-badge-container {
+    margin-bottom: 20px;
+  }
+  
+  .hero-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  
+  .hero-title {
+    font-family: "Times New Roman", serif;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: normal;
+    color: var(--secondary-color);
+    text-shadow: 0 0 20px rgba(0,0,0,0.8);
+    letter-spacing: 0.1em;
+    margin: 0;
+  }
+  
+  /* Scroll Indicator */
+  .scroll-indicator {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 1;
+    opacity: 0.7;
+  }
+  
+  .scroll-indicator span {
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+  }
+  
+  .scroll-indicator .line {
+    width: 1px;
+    height: 60px;
+    background: var(--secondary-color);
+  }
+  
+  /* Sections Common */
+  .section {
+    padding: 100px 0;
+  }
+  
+  .section-inner {
+    position: relative;
+  }
+  
+  .section-title {
+    font-family: "Times New Roman", serif;
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 60px;
+    color: var(--primary-color);
+    font-weight: normal;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(138, 3, 3, 0.3);
+  }
+  
+  .gothic-border {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 40px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    border-top: 2px solid var(--primary-color);
+    position: relative;
+  }
+  
+  .gothic-border::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+  }
+  
+  /* About */
+  .section-content {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .about-text {
+    text-align: center;
+    white-space: pre-wrap;
+    line-height: 2;
+  }
+
+  /* Release Info */
+  .release-layout {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .jacket-area {
+    flex: 0 0 auto;
+    max-width: 350px;
+  }
+
+  .jacket-img {
+    width: 100%;
+    height: auto;
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+  }
+
+  .album-info {
+    flex: 1 1 400px;
+    min-width: 300px;
+  }
+
+  .info-list {
+    margin: 30px auto;
+    max-width: 600px;
+    border-top: 1px solid #333;
+  }
+  
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #333;
+  }
+  
+  .info-item dt {
+    color: var(--primary-color);
+    font-weight: bold;
+  }
+  
+  .album-title-sub {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+  }
+  
+  .artist-name {
+    text-align: center;
+    color: #888;
+    margin-bottom: 30px;
+  }
+  
+  .shop-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+  
+  .btn {
+    display: inline-block;
+    padding: 12px 40px;
+    border: 1px solid var(--primary-color);
+    color: var(--secondary-color);
+    background: linear-gradient(45deg, #1a0000, #000);
+    transition: all 0.3s;
+    letter-spacing: 0.1em;
+    min-width: 180px;
+    text-align: center;
+  }
+  
+  .btn:hover {
+    background: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 0 20px var(--primary-color);
+  }
+  
+  /* Tracklist */
+  .track-list {
+    list-style: none;
+  }
+  
+  .track-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.3s;
+  }
+  
+  .track-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  .track-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .track-num {
+    font-family: "Times New Roman", serif;
+    font-style: italic;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    min-width: 30px;
+  }
+  
+  .track-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .track-title {
+    font-size: 1.1rem;
+  }
+  
+  .track-artist-sub {
+    font-size: 0.8rem;
+    color: #888;
+  }
+  
+  .track-time {
+    font-family: monospace;
+    color: #666;
+  }
+  
+  /* Video */
+  .video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 */
+    height: 0;
+    overflow: hidden;
+    padding: 0; /* Override gothic-border padding for video */
+    padding-bottom: 56.25%;
+    border: 1px solid var(--primary-color);
+  }
+  
+  .video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Credits */
+  .credits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .credit-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .credit-role {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+  
+  .credit-name {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+  
+  .credit-links a {
+    font-size: 0.85rem;
+    margin: 0 5px;
+    color: #888;
+    border-bottom: 1px solid transparent;
+  }
+  
+  .credit-links a:hover {
+    color: var(--secondary-color);
+    border-bottom-color: var(--secondary-color);
+  }
+  
+  /* Footer */
+  .footer {
+    margin-top: 100px;
+    padding: 60px 20px;
+    background-color: #000;
+    border-top: 1px solid #222;
+    text-align: center;
+  }
+  
+  .footer-logo img {
+    max-width: 150px;
+    margin-bottom: 30px;
+    filter: grayscale(100%);
+  }
+  
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 30px;
+  }
+  
+  .copyright {
+    color: #555;
+    font-size: 0.8rem;
+  }
+  
+  /* Mobile Responsiveness (Required) */
+  @media (max-width: 768px) {
+    .hero {
+      /* Critical: Mobile background position */
+      background-position: center var(--hero-position-y-mobile) !important;
+    }
+  
+    .hero-title {
+      font-size: 3rem;
+    }
+  
+    .section {
+      padding: 60px 0;
+    }
+    
+    .section-title {
+      font-size: 2rem;
+      margin-bottom: 40px;
+    }
+    
+    .gothic-border {
+      padding: 20px;
+    }
+    
+    .track-item {
+      flex-wrap: wrap;
+    }
+    
+    .track-right {
+      width: 100%;
+      text-align: right;
+      margin-top: 5px;
+      font-size: 0.8rem;
+    }
+  }

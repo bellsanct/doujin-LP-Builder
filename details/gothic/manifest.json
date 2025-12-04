@@ -1,0 +1,14 @@
+{
+    "id": "gothic",
+    "name": "gothic",
+    "version": "1.0.0",
+    "description": "A heavy, fantastical, and solemn landing page template designed for Gothic Hardcore and Metal music releases.",
+    "category": "music",
+    "author": {
+      "name": "Doujin LP Builder AI"
+    },
+    "template": {
+      "engine": "handlebars",
+      "version": "4.7.8"
+    }
+  }

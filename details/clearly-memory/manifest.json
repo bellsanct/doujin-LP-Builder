@@ -1,0 +1,14 @@
+{
+    "id": "clearly-memory",
+    "name": "Clearly Memory",
+    "version": "1.0.0",
+    "description": "A refreshing and simple landing page template for youth-themed music releases.",
+    "category": "music",
+    "author": {
+      "name": "Doujin LP Builder AI"
+    },
+    "template": {
+      "engine": "handlebars",
+      "version": "4.7.8"
+    }
+  }

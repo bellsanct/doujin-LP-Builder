@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{siteTitle}}</title>
+  <meta name="description" content="{{seoDescription}}">
+  <style>
+    :root {
+      --primary-color: {{primaryColor}};
+      --secondary-color: {{secondaryColor}};
+      --accent-color: {{accentColor}};
+      --overlay-color: {{overlayColor}};
+      --overlay-opacity: calc({{overlayOpacity}} / 100);
+      --hero-position-y-mobile: {{heroPositionY_mobile}};
+    }
+  </style>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="hero" {{#if heroImage}}style="background-image: url('{{heroImage}}'); background-position: {{heroPositionX}} {{heroPositionY}};"{{/if}}>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-inner-frame">
+        {{#if heroBadge}}
+        <div class="badge-container">
+          <span class="hero-badge">{{heroBadge}}</span>
+        </div>
+        {{/if}}
+        <h1 class="hero-title">{{heroTitle}}</h1>
+      </div>
+    </div>
+  </header>
+
+  <div class="info-bar">
+    {{#if releaseInfo}}
+    <div class="release-summary">
+      {{#each releaseInfo}}
+      <span class="info-item"><span class="info-label">{{label}}</span> {{value}}</span>
+      {{/each}}
+    </div>
+    {{/if}}
+  </div>
+
+  <div class="container">
+    
+    {{#if aboutText}}
+    <section id="about" class="section">
+      <div class="section-header">
+        <h2 class="section-title">{{aboutTitle}}</h2>
+        <div class="title-decoration"></div>
+      </div>
+      <p class="about-text">{{aboutText}}</p>
+    </section>
+    {{/if}}
+
+    <section id="release" class="section">
+      <div class="section-header">
+        <h2 class="section-title">Release</h2>
+        <div class="title-decoration"></div>
+      </div>
+      <div class="release-content">
+        {{#if jacketImage}}
+        <div class="jacket-container">
+          <img src="{{jacketImage}}" alt="{{albumTitle}}" class="jacket-image">
+        </div>
+        {{/if}}
+        <div class="release-info-area">
+          <h3 class="album-title-text">{{albumTitle}}</h3>
+          {{#if artistName}}<p class="artist-name-text">{{artistName}}</p>{{/if}}
+        </div>
+      </div>
+    </section>
+
+    {{#if youtubeUrl}}
+    <section class="section">
+      <div class="video-container">
+        <iframe src="https://www.youtube.com/embed/{{extractYouTubeID youtubeUrl}}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </section>
+    {{/if}}
+
+    {{#if tracks}}
+    <section id="tracks" class="section">
+      <div class="section-header">
+        <h2 class="section-title">Tracklist</h2>
+        <div class="title-decoration"></div>
+      </div>
+      <ul class="track-list">
+        {{#each tracks}}
+        <li class="track-item">
+          <div class="track-left">
+            <span class="track-num">{{trackNumber}}</span>
+            <div class="track-info">
+              <span class="track-title">{{title}}</span>
+              {{#if artist}}<span class="track-artist">{{artist}}</span>{{/if}}
+            </div>
+          </div>
+          <div class="track-right">
+            {{#if duration}}<span class="track-time">{{duration}}</span>{{/if}}
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{/if}}
+
+    {{#if shopLinks}}
+    <section class="section">
+      <div class="shop-buttons">
+        {{#each shopLinks}}
+        <a href="{{url}}" class="btn btn-shop" target="_blank" rel="noopener">{{label}}</a>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
+
+    {{#if credits}}
+    <section id="credits" class="section">
+      <div class="section-header">
+        <h2 class="section-title">Credits</h2>
+        <div class="title-decoration"></div>
+      </div>
+      <div class="credits-grid">
+        {{#each credits}}
+        <div class="credit-card">
+          <div class="credit-role">{{role}}</div>
+          <div class="credit-name">{{name}}</div>
+          <div class="credit-links">
+            {{#if link1Url}}<a href="{{link1Url}}" target="_blank">{{#if link1Label}}{{link1Label}}{{else}}Link{{/if}}</a>{{/if}}
+            {{#if link2Url}} / <a href="{{link2Url}}" target="_blank">{{#if link2Label}}{{link2Label}}{{else}}Link{{/if}}</a>{{/if}}
+            {{#if link3Url}} / <a href="{{link3Url}}" target="_blank">{{#if link3Label}}{{link3Label}}{{else}}Link{{/if}}</a>{{/if}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
+
+  </div>
+
+  <footer class="footer">
+    {{#if footerLogo}}
+    <div class="footer-logo">
+      <img src="{{footerLogo}}" alt="Footer Logo">
+    </div>
+    {{/if}}
+    
+    {{#if footerLinks}}
+    <div class="footer-links">
+      {{#each footerLinks}}
+      <a href="{{url}}" target="_blank">{{label}}</a>
+      {{/each}}
+    </div>
+    {{/if}}
+    
+    <p class="copyright">{{footerCopyright}}</p>
+  </footer>
+
+</body>
+</html>
