@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     filters?: { name: string; extensions: string[] }[];
     properties?: ('openFile' | 'multiSelections')[];
   }) => ipcRenderer.invoke('select-file', options),
+
+  selectSavePath: (options?: {
+    defaultPath?: string;
+    filters?: { name: string; extensions: string[] }[];
+  }) => ipcRenderer.invoke('select-save-path', options),
   
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   
@@ -32,7 +37,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   buildLP: (options: {
     template: any;
     config: any;
-    outputDir: string;
+    outputZipPath: string;
   }) => ipcRenderer.invoke('build-lp', options),
 
   // ログ機能

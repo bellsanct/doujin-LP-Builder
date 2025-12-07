@@ -95,13 +95,46 @@ function AppContent() {
       return;
     }
 
-    if ((window as any)?.electronAPI?.selectDirectory && (window as any)?.electronAPI?.buildLP) {
+    const serializeAssets = (assets: any): { filename: string; data: number[] }[] => {
+      const serialized: { filename: string; data: number[] }[] = [];
       try {
-        const outputDir = await (window as any).electronAPI.selectDirectory();
-        if (!outputDir) return;
-        const result = await (window as any).electronAPI.buildLP({ template: selectedTemplate, config, outputDir });
+        if (assets instanceof Map) {
+          assets.forEach((data, filename) => serialized.push({ filename, data: Array.from(data as any) }));
+        } else if (Array.isArray(assets)) {
+          assets.forEach((a) => {
+            if (!a) return;
+            const filename = a.filename ?? a.path ?? '';
+            if (!filename) return;
+            const data = Array.isArray(a.data) ? a.data : Array.from(a.data || []);
+            serialized.push({ filename, data });
+          });
+        } else if (assets && typeof assets === 'object') {
+          Object.keys(assets).forEach((k) => {
+            const v = (assets as any)[k];
+            if (!v) return;
+            const data = Array.isArray(v) ? v : Array.from(v.data ?? v);
+            serialized.push({ filename: k, data });
+          });
+        }
+      } catch {}
+      return serialized;
+    };
+
+    if ((window as any)?.electronAPI?.selectSavePath && (window as any)?.electronAPI?.buildLP) {
+      try {
+        const defaultName = `${selectedTemplate.manifest?.id || 'lp'}-build.zip`;
+        const outputZipPath = await (window as any).electronAPI.selectSavePath({
+          defaultPath: defaultName,
+          filters: [{ name: 'ZIP', extensions: ['zip'] }],
+        });
+        if (!outputZipPath) return;
+        const templateForBuild = { ...selectedTemplate, assets: serializeAssets((selectedTemplate as any).assets) };
+        const result = await (window as any).electronAPI.buildLP({ template: templateForBuild, config, outputZipPath });
         if (result?.success) {
-          alert(t.messages.buildSuccess.replace('{path}', result.outputDir));
+          alert(t.messages.buildSuccess.replace('{path}', result.outputPath));
+        } else {
+          const reason = result?.error ? `\n${result.error}` : '';
+          alert(t.messages.buildFailed + reason);
         }
       } catch (e) {
         console.error('Build failed:', e);

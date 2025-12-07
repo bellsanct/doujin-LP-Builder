@@ -1,6 +1,8 @@
-﻿import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as crypto from 'crypto';
+import AdmZip from 'adm-zip';
 import { loadTemplate, validateTemplateFile } from './templateLoader';
 import { logger } from './logger';
 import type { BuildRequest, BuildResult } from '../types/ipc';
@@ -186,6 +188,15 @@ ipcMain.handle('select-file', async (_e, options?: { filters?: { name: string; e
   return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0];
 });
 
+ipcMain.handle('select-save-path', async (_e, options?: { defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => {
+  const res = await dialog.showSaveDialog({
+    defaultPath: options?.defaultPath,
+    filters: options?.filters ?? [{ name: 'ZIP', extensions: ['zip'] }],
+    properties: ['createDirectory', 'showOverwriteConfirmation']
+  });
+  return res.canceled || !res.filePath ? null : res.filePath;
+});
+
 ipcMain.handle('select-directory', async () => {
   const res = await dialog.showOpenDialog({ properties: ['openDirectory','createDirectory'] });
   return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0];
@@ -198,22 +209,144 @@ ipcMain.handle('create-directory', async (_e, dirPath: string) => { await fs.mkd
 ipcMain.handle('copy-file', async (_e, src: string, dest: string) => { await fs.copyFile(src, dest); return true; });
 
 ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildResult> => {
-  const { template, config, outputDir } = options;
-  await fs.mkdir(outputDir, { recursive: true });
-  const Handlebars = require('handlebars');
-  const compiled = Handlebars.compile(template.template);
-  const renderedHtml = compiled(config);
-  await fs.writeFile(path.join(outputDir, 'index.html'), renderedHtml, 'utf-8');
-  await fs.writeFile(path.join(outputDir, 'style.css'), template.styles, 'utf-8');
-  if (template.scripts) await fs.writeFile(path.join(outputDir, 'script.js'), template.scripts, 'utf-8');
-  if (Array.isArray((template as any).assets)) {
-    for (const a of (template as any).assets as { filename: string; data: number[] }[]) {
-      const assetPath = path.join(outputDir, a.filename);
-      await fs.mkdir(path.dirname(assetPath), { recursive: true });
-      await fs.writeFile(assetPath, Buffer.from(a.data));
+  try {
+    if (!options?.outputZipPath) {
+      throw new Error('出力先パスが取得できませんでした');
     }
+    const { template, config } = options;
+    let outputPath = options.outputZipPath;
+    if (!outputPath.toLowerCase().endsWith('.zip')) {
+      outputPath = `${outputPath}.zip`;
+    }
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    const Handlebars = require('handlebars');
+    // Helper登録（rendererと同等のものを最低限サポート）
+    Handlebars.registerHelper('equals', (a: any, b: any, opts: any) => (a === b ? opts.fn(opts.data?.root) : opts.inverse(opts.data?.root)));
+    Handlebars.registerHelper('contains', (array: any[], item: any, opts: any) => (
+      Array.isArray(array) && array.includes(item) ? opts.fn(opts.data?.root) : opts.inverse(opts.data?.root)
+    ));
+    Handlebars.registerHelper('extractYouTubeID', function(url: string) {
+      if (!url) return '';
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2]?.length === 11) ? match[2] : '';
+    });
+    const compiled = Handlebars.compile(template.template);
+    let renderedHtml = compiled(config);
+
+    // assets の内容をハッシュ化して、data URL から逆引きできるように準備
+    const assetBufferMap = new Map<string, { filename: string; buffer: Buffer }>();
+    const recordAssetBuffer = (filename: string, buf: Buffer) => {
+      try {
+        const hash = crypto.createHash('sha256').update(buf).digest('hex');
+        assetBufferMap.set(hash, { filename, buffer: buf });
+      } catch (e) { console.error('Failed to hash asset buffer', filename, e); }
+    };
+
+    const mimeExtMap: Record<string, string> = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/gif': 'gif',
+      'image/svg+xml': 'svg',
+      'image/webp': 'webp',
+      'image/x-icon': 'ico'
+    };
+
+    const extractedAssets: { filename: string; buffer: Buffer }[] = [];
+    let inlineAssetCounter = 0;
+    const seenInline = new Map<string, string>();
+    const extractDataUrls = (content: string, kind: 'html'|'css'): string => {
+      if (!content) return content;
+      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+      return content.replace(dataUrlRegex, (_m, mime, base64) => {
+        const mimeLower = String(mime || '').toLowerCase();
+        const key = `${mimeLower}:${base64.substring(0, 32)}`;
+        let filename = seenInline.get(key);
+        if (filename) return filename;
+
+        let buffer: Buffer | null = null;
+        try { buffer = Buffer.from(base64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+
+        // 既存の assets とハッシュ照合してファイル名を復元
+        if (buffer) {
+          const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+          const match = assetBufferMap.get(hash);
+          if (match) {
+            filename = toAssetEntryPath(match.filename);
+            seenInline.set(key, filename);
+            return filename;
+          }
+        }
+
+        // 見つからない場合は inline 付与で新規に出力
+        inlineAssetCounter += 1;
+        const ext = mimeExtMap[mimeLower] || 'bin';
+        filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
+        seenInline.set(key, filename);
+        if (buffer) {
+          try { extractedAssets.push({ filename, buffer }); } catch (e) { console.error('Failed to store inline asset', e); }
+        }
+        return filename;
+      });
+    };
+
+    // data URLをassets配下に分離
+    renderedHtml = extractDataUrls(renderedHtml, 'html');
+    const stylesContent = extractDataUrls(template.styles || '', 'css');
+
+    const toAssetEntryPath = (name: string): string => {
+      const raw = String(name || '');
+      const withoutDrive = raw.replace(/^[a-zA-Z]:/, '');
+      const sanitized = withoutDrive.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
+      const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
+      const normalized = parts.length > 0 ? parts.join('/') : 'asset';
+      return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
+    };
+
+    const zip = new AdmZip();
+    zip.addFile('index.html', Buffer.from(renderedHtml, 'utf-8'));
+    zip.addFile('style.css', Buffer.from(stylesContent || '', 'utf-8'));
+    if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
+
+    const assets = (template as any).assets;
+    if (Array.isArray(assets)) {
+      for (const a of assets as { filename: string; data: number[] }[]) {
+        if (!a?.filename) continue;
+        try {
+          const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
+          const entryPath = toAssetEntryPath(a.filename);
+          zip.addFile(entryPath, dataBuffer);
+          recordAssetBuffer(entryPath, dataBuffer);
+        } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
+      }
+    } else if (assets && typeof assets === 'object') {
+      for (const k of Object.keys(assets)) {
+        const data = (assets as any)[k];
+        if (!data) continue;
+        try {
+          const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+          const entryPath = toAssetEntryPath(k);
+          zip.addFile(entryPath, dataBuffer);
+          recordAssetBuffer(entryPath, dataBuffer);
+        } catch (e) { console.error('Failed to add asset to zip:', k, e); }
+      }
+    }
+    if (extractedAssets.length > 0) {
+      extractedAssets.forEach(({ filename, buffer }) => {
+        try {
+          const entryPath = toAssetEntryPath(filename);
+          zip.addFile(entryPath, buffer);
+        } catch (e) { console.error('Failed to add extracted asset to zip:', filename, e); }
+      });
+    }
+
+    zip.writeZip(outputPath);
+    return { success: true, outputPath };
+  } catch (e: any) {
+    console.error('Build failed:', e);
+    return { success: false, error: e?.message ?? 'unknown error' };
   }
-  return { success: true, outputDir };
 });
 
 // logger IPC
@@ -229,3 +362,4 @@ ipcMain.handle('log-set-directory', async () => {
 });
 ipcMain.handle('log-get-level', async () => logger.getLogLevel());
 ipcMain.handle('log-set-level', async (_e, level: 'DEBUG'|'INFO'|'WARN'|'ERROR') => { await logger.setLogLevel(level as any); });
+
