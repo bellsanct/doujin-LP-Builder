@@ -1,6 +1,7 @@
-﻿import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import AdmZip from 'adm-zip';
 import { loadTemplate, validateTemplateFile } from './templateLoader';
 import { logger } from './logger';
 import type { BuildRequest, BuildResult } from '../types/ipc';
@@ -186,6 +187,15 @@ ipcMain.handle('select-file', async (_e, options?: { filters?: { name: string; e
   return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0];
 });
 
+ipcMain.handle('select-save-path', async (_e, options?: { defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => {
+  const res = await dialog.showSaveDialog({
+    defaultPath: options?.defaultPath,
+    filters: options?.filters ?? [{ name: 'ZIP', extensions: ['zip'] }],
+    properties: ['createDirectory', 'showOverwriteConfirmation']
+  });
+  return res.canceled || !res.filePath ? null : res.filePath;
+});
+
 ipcMain.handle('select-directory', async () => {
   const res = await dialog.showOpenDialog({ properties: ['openDirectory','createDirectory'] });
   return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0];
@@ -198,22 +208,43 @@ ipcMain.handle('create-directory', async (_e, dirPath: string) => { await fs.mkd
 ipcMain.handle('copy-file', async (_e, src: string, dest: string) => { await fs.copyFile(src, dest); return true; });
 
 ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildResult> => {
-  const { template, config, outputDir } = options;
-  await fs.mkdir(outputDir, { recursive: true });
+  const { template, config } = options;
+  let outputPath = options.outputZipPath;
+  if (!outputPath.toLowerCase().endsWith('.zip')) {
+    outputPath = `${outputPath}.zip`;
+  }
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
   const Handlebars = require('handlebars');
   const compiled = Handlebars.compile(template.template);
   const renderedHtml = compiled(config);
-  await fs.writeFile(path.join(outputDir, 'index.html'), renderedHtml, 'utf-8');
-  await fs.writeFile(path.join(outputDir, 'style.css'), template.styles, 'utf-8');
-  if (template.scripts) await fs.writeFile(path.join(outputDir, 'script.js'), template.scripts, 'utf-8');
-  if (Array.isArray((template as any).assets)) {
-    for (const a of (template as any).assets as { filename: string; data: number[] }[]) {
-      const assetPath = path.join(outputDir, a.filename);
-      await fs.mkdir(path.dirname(assetPath), { recursive: true });
-      await fs.writeFile(assetPath, Buffer.from(a.data));
+
+  const zip = new AdmZip();
+  zip.addFile('index.html', Buffer.from(renderedHtml, 'utf-8'));
+  zip.addFile('style.css', Buffer.from(template.styles || '', 'utf-8'));
+  if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
+
+  const assets = (template as any).assets;
+  if (Array.isArray(assets)) {
+    for (const a of assets as { filename: string; data: number[] }[]) {
+      if (!a?.filename) continue;
+      try {
+        const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
+        zip.addFile(a.filename, dataBuffer);
+      } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
+    }
+  } else if (assets && typeof assets === 'object') {
+    for (const k of Object.keys(assets)) {
+      const data = (assets as any)[k];
+      if (!data) continue;
+      try {
+        const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+        zip.addFile(k, dataBuffer);
+      } catch (e) { console.error('Failed to add asset to zip:', k, e); }
     }
   }
-  return { success: true, outputDir };
+
+  zip.writeZip(outputPath);
+  return { success: true, outputPath };
 });
 
 // logger IPC
@@ -229,3 +260,4 @@ ipcMain.handle('log-set-directory', async () => {
 });
 ipcMain.handle('log-get-level', async () => logger.getLogLevel());
 ipcMain.handle('log-set-level', async (_e, level: 'DEBUG'|'INFO'|'WARN'|'ERROR') => { await logger.setLogLevel(level as any); });
+

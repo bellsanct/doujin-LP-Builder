@@ -3,12 +3,12 @@ import type { TemplateArchive, UserConfig } from './template';
 export interface BuildRequest {
   template: TemplateArchive;
   config: UserConfig;
-  outputDir: string;
+  outputZipPath: string;
 }
 
 export interface BuildResult {
   success: boolean;
-  outputDir: string;
+  outputPath: string;
 }
 
 export interface LoggerAPI {
@@ -30,6 +30,7 @@ export interface ElectronAPI {
     filters?: { name: string; extensions: string[] }[];
     properties?: ('openFile' | 'multiSelections')[];
   }) => Promise<string | null>;
+  selectSavePath: (options?: { defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<string | null>;
   selectDirectory: () => Promise<string | null>;
   readFile: (filePath: string) => Promise<string>;
   readFileBase64: (filePath: string) => Promise<string>;
@@ -40,4 +41,3 @@ export interface ElectronAPI {
   log: LoggerAPI;
   onMenuEvent: (channel: string, callback: () => void) => () => void;
 }
-
