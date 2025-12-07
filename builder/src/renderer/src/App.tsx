@@ -133,7 +133,8 @@ function AppContent() {
         if (result?.success) {
           alert(t.messages.buildSuccess.replace('{path}', result.outputPath));
         } else {
-          alert(t.messages.buildFailed);
+          const reason = result?.error ? `\n${result.error}` : '';
+          alert(t.messages.buildFailed + reason);
         }
       } catch (e) {
         console.error('Build failed:', e);

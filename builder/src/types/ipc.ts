@@ -8,7 +8,8 @@ export interface BuildRequest {
 
 export interface BuildResult {
   success: boolean;
-  outputPath: string;
+  outputPath?: string;
+  error?: string;
 }
 
 export interface LoggerAPI {

@@ -208,52 +208,62 @@ ipcMain.handle('create-directory', async (_e, dirPath: string) => { await fs.mkd
 ipcMain.handle('copy-file', async (_e, src: string, dest: string) => { await fs.copyFile(src, dest); return true; });
 
 ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildResult> => {
-  const { template, config } = options;
-  let outputPath = options.outputZipPath;
-  if (!outputPath.toLowerCase().endsWith('.zip')) {
-    outputPath = `${outputPath}.zip`;
-  }
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  const Handlebars = require('handlebars');
-  const compiled = Handlebars.compile(template.template);
-  const renderedHtml = compiled(config);
-
-  const toAssetEntryPath = (name: string): string => {
-    const sanitized = name.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
-    const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
-    const normalized = parts.join('/');
-    return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
-  };
-
-  const zip = new AdmZip();
-  zip.addFile('index.html', Buffer.from(renderedHtml, 'utf-8'));
-  zip.addFile('style.css', Buffer.from(template.styles || '', 'utf-8'));
-  if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
-
-  const assets = (template as any).assets;
-  if (Array.isArray(assets)) {
-    for (const a of assets as { filename: string; data: number[] }[]) {
-      if (!a?.filename) continue;
-      try {
-        const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
-        const entryPath = toAssetEntryPath(a.filename);
-        zip.addFile(entryPath, dataBuffer);
-      } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
+  try {
+    if (!options?.outputZipPath) {
+      throw new Error('出力先パスが取得できませんでした');
     }
-  } else if (assets && typeof assets === 'object') {
-    for (const k of Object.keys(assets)) {
-      const data = (assets as any)[k];
-      if (!data) continue;
-      try {
-        const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
-        const entryPath = toAssetEntryPath(k);
-        zip.addFile(entryPath, dataBuffer);
-      } catch (e) { console.error('Failed to add asset to zip:', k, e); }
+    const { template, config } = options;
+    let outputPath = options.outputZipPath;
+    if (!outputPath.toLowerCase().endsWith('.zip')) {
+      outputPath = `${outputPath}.zip`;
     }
-  }
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    const Handlebars = require('handlebars');
+    const compiled = Handlebars.compile(template.template);
+    const renderedHtml = compiled(config);
 
-  zip.writeZip(outputPath);
-  return { success: true, outputPath };
+    const toAssetEntryPath = (name: string): string => {
+      const raw = String(name || '');
+      const withoutDrive = raw.replace(/^[a-zA-Z]:/, '');
+      const sanitized = withoutDrive.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
+      const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
+      const normalized = parts.length > 0 ? parts.join('/') : 'asset';
+      return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
+    };
+
+    const zip = new AdmZip();
+    zip.addFile('index.html', Buffer.from(renderedHtml, 'utf-8'));
+    zip.addFile('style.css', Buffer.from(template.styles || '', 'utf-8'));
+    if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
+
+    const assets = (template as any).assets;
+    if (Array.isArray(assets)) {
+      for (const a of assets as { filename: string; data: number[] }[]) {
+        if (!a?.filename) continue;
+        try {
+          const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
+          const entryPath = toAssetEntryPath(a.filename);
+          zip.addFile(entryPath, dataBuffer);
+        } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
+      }
+    } else if (assets && typeof assets === 'object') {
+      for (const k of Object.keys(assets)) {
+        const data = (assets as any)[k];
+        if (!data) continue;
+        try {
+          const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+          const entryPath = toAssetEntryPath(k);
+          zip.addFile(entryPath, dataBuffer);
+        } catch (e) { console.error('Failed to add asset to zip:', k, e); }
+      }
+    }
+
+    zip.writeZip(outputPath);
+    return { success: true, outputPath };
+  } catch (e: any) {
+    console.error('Build failed:', e);
+    return { success: false, error: e?.message ?? 'unknown error' };
+  }
 });
 
 // logger IPC
