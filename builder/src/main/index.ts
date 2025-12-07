@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as crypto from 'crypto';
 import AdmZip from 'adm-zip';
 import { loadTemplate, validateTemplateFile } from './templateLoader';
 import { logger } from './logger';
@@ -219,8 +220,58 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     }
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     const Handlebars = require('handlebars');
+    // Helper登録（rendererと同等のものを最低限サポート）
+    Handlebars.registerHelper('equals', (a: any, b: any, opts: any) => (a === b ? opts.fn(opts.data?.root) : opts.inverse(opts.data?.root)));
+    Handlebars.registerHelper('contains', (array: any[], item: any, opts: any) => (
+      Array.isArray(array) && array.includes(item) ? opts.fn(opts.data?.root) : opts.inverse(opts.data?.root)
+    ));
+    Handlebars.registerHelper('extractYouTubeID', function(url: string) {
+      if (!url) return '';
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2]?.length === 11) ? match[2] : '';
+    });
     const compiled = Handlebars.compile(template.template);
-    const renderedHtml = compiled(config);
+    let renderedHtml = compiled(config);
+
+    const mimeExtMap: Record<string, string> = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/gif': 'gif',
+      'image/svg+xml': 'svg',
+      'image/webp': 'webp',
+      'image/x-icon': 'ico'
+    };
+
+    const extractedAssets: { filename: string; buffer: Buffer }[] = [];
+    let inlineAssetCounter = 0;
+    const seenInline = new Map<string, string>();
+    const extractDataUrls = (content: string, kind: 'html'|'css'): string => {
+      if (!content) return content;
+      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+      return content.replace(dataUrlRegex, (_m, mime, base64) => {
+        const mimeLower = String(mime || '').toLowerCase();
+        const key = `${mimeLower}:${base64.substring(0, 32)}`;
+        let filename = seenInline.get(key);
+        if (!filename) {
+          inlineAssetCounter += 1;
+          const ext = mimeExtMap[mimeLower] || 'bin';
+          filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
+          seenInline.set(key, filename);
+          try {
+            extractedAssets.push({ filename, buffer: Buffer.from(base64, 'base64') });
+          } catch (e) {
+            console.error('Failed to decode data URL asset', e);
+          }
+        }
+        return filename;
+      });
+    };
+
+    // data URLをassets配下に分離
+    renderedHtml = extractDataUrls(renderedHtml, 'html');
+    const stylesContent = extractDataUrls(template.styles || '', 'css');
 
     const toAssetEntryPath = (name: string): string => {
       const raw = String(name || '');
@@ -233,7 +284,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
 
     const zip = new AdmZip();
     zip.addFile('index.html', Buffer.from(renderedHtml, 'utf-8'));
-    zip.addFile('style.css', Buffer.from(template.styles || '', 'utf-8'));
+    zip.addFile('style.css', Buffer.from(stylesContent || '', 'utf-8'));
     if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
 
     const assets = (template as any).assets;
@@ -256,6 +307,14 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
           zip.addFile(entryPath, dataBuffer);
         } catch (e) { console.error('Failed to add asset to zip:', k, e); }
       }
+    }
+    if (extractedAssets.length > 0) {
+      extractedAssets.forEach(({ filename, buffer }) => {
+        try {
+          const entryPath = toAssetEntryPath(filename);
+          zip.addFile(entryPath, buffer);
+        } catch (e) { console.error('Failed to add extracted asset to zip:', filename, e); }
+      });
     }
 
     zip.writeZip(outputPath);
