@@ -234,6 +234,15 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     const compiled = Handlebars.compile(template.template);
     let renderedHtml = compiled(config);
 
+    // assets の内容をハッシュ化して、data URL から逆引きできるように準備
+    const assetBufferMap = new Map<string, { filename: string; buffer: Buffer }>();
+    const recordAssetBuffer = (filename: string, buf: Buffer) => {
+      try {
+        const hash = crypto.createHash('sha256').update(buf).digest('hex');
+        assetBufferMap.set(hash, { filename, buffer: buf });
+      } catch (e) { console.error('Failed to hash asset buffer', filename, e); }
+    };
+
     const mimeExtMap: Record<string, string> = {
       'image/png': 'png',
       'image/jpeg': 'jpg',
@@ -254,16 +263,29 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
         const mimeLower = String(mime || '').toLowerCase();
         const key = `${mimeLower}:${base64.substring(0, 32)}`;
         let filename = seenInline.get(key);
-        if (!filename) {
-          inlineAssetCounter += 1;
-          const ext = mimeExtMap[mimeLower] || 'bin';
-          filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
-          seenInline.set(key, filename);
-          try {
-            extractedAssets.push({ filename, buffer: Buffer.from(base64, 'base64') });
-          } catch (e) {
-            console.error('Failed to decode data URL asset', e);
+        if (filename) return filename;
+
+        let buffer: Buffer | null = null;
+        try { buffer = Buffer.from(base64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+
+        // 既存の assets とハッシュ照合してファイル名を復元
+        if (buffer) {
+          const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+          const match = assetBufferMap.get(hash);
+          if (match) {
+            filename = toAssetEntryPath(match.filename);
+            seenInline.set(key, filename);
+            return filename;
           }
+        }
+
+        // 見つからない場合は inline 付与で新規に出力
+        inlineAssetCounter += 1;
+        const ext = mimeExtMap[mimeLower] || 'bin';
+        filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
+        seenInline.set(key, filename);
+        if (buffer) {
+          try { extractedAssets.push({ filename, buffer }); } catch (e) { console.error('Failed to store inline asset', e); }
         }
         return filename;
       });
@@ -295,6 +317,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
           const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
           const entryPath = toAssetEntryPath(a.filename);
           zip.addFile(entryPath, dataBuffer);
+          recordAssetBuffer(entryPath, dataBuffer);
         } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
       }
     } else if (assets && typeof assets === 'object') {
@@ -305,6 +328,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
           const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
           const entryPath = toAssetEntryPath(k);
           zip.addFile(entryPath, dataBuffer);
+          recordAssetBuffer(entryPath, dataBuffer);
         } catch (e) { console.error('Failed to add asset to zip:', k, e); }
       }
     }
