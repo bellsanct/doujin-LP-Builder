@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import TemplateOpener from './components/TemplateOpener';
-import ConfigEditor from './components/ConfigEditor';
+import TemplateOpener, { TemplateOpenerRef } from './components/TemplateOpener';
+import ConfigEditor, { ConfigEditorRef } from './components/ConfigEditor';
 import PreviewPane from './components/PreviewPane';
 import { Button, Title3 } from '@fluentui/react-components';
 import { PaintBrush24Regular, FolderOpen24Regular, Play24Regular, Save24Regular } from '@fluentui/react-icons';
-import { saveTemplateWithUserConfig } from './utils/templateSaver';
+import { saveTemplateWithUserConfig, exportStaticSiteZip } from './utils/templateSaver';
+import type { TemplateArchive, UserConfig } from '../../types/template';
+import { I18nProvider } from './components/I18nProvider';
+import { useTranslation } from './i18n';
 
 interface Template {
   filePath: string;
@@ -17,134 +20,183 @@ interface Template {
   template: string;
   styles: string;
   scripts: string;
-  assets: Map<string, Buffer>;
+  assets: Map<string, Uint8Array> | Map<string, Buffer> | Array<{ filename: string; data: any }> | Record<string, any>;
 }
 
-function App() {
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [config, setConfig] = useState<any>(null);
+function AppContent() {
+  const { t, setLanguage } = useTranslation();
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateArchive | null>(null);
+  const [config, setConfig] = useState<UserConfig | null>(null);
+  const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null);
+  const templateOpenerRef = useRef<TemplateOpenerRef>(null);
+  const configEditorRef = useRef<ConfigEditorRef | null>(null);
 
-  const handleTemplateOpen = (templateData: any) => {
-    console.log('📂 [App] Template opened:', templateData.manifest.name);
+  const handleTemplateOpen = (templateData: TemplateArchive) => {
+    console.log('🗂️ [App] Template opened:', templateData?.manifest?.name);
 
-    // シリアライズされたアセットをMap形式に戻す
-    const assets = new Map<string, Uint8Array>();
-    if (Array.isArray(templateData.assets)) {
-      templateData.assets.forEach((asset: { filename: string; data: number[] }) => {
-        assets.set(asset.filename, new Uint8Array(asset.data));
-      });
-    }
+    // Normalize assets to Map<string, Uint8Array>
+    let assets: Map<string, Uint8Array> = new Map();
+    try {
+      if (templateData.assets instanceof Map) {
+        assets = new Map(templateData.assets);
+      } else if (Array.isArray(templateData.assets)) {
+        const m = new Map<string, Uint8Array>();
+        templateData.assets.forEach((asset: { filename: string; data: number[] | Uint8Array }) => {
+          m.set(asset.filename, asset.data instanceof Uint8Array ? asset.data : new Uint8Array(asset.data));
+        });
+        assets = m;
+      } else if (templateData.assets && typeof templateData.assets === 'object') {
+        const m = new Map<string, Uint8Array>();
+        Object.keys(templateData.assets).forEach((k) => {
+          const v = templateData.assets[k];
+          if (v instanceof Uint8Array) m.set(k, v);
+        });
+        assets = m;
+      }
+    } catch {}
 
-    const template: Template = {
+    const template: TemplateArchive = {
       ...templateData,
       assets,
     };
 
     setSelectedTemplate(template);
-    
-    // userConfigが存在する場合はそれを使用、なければdefaultConfigを使用
-    const initialConfig = template.userConfig || template.defaultConfig;
-    setConfig(initialConfig);
-    
-    // 復元された場合はログ出力
-    if (template.userConfig) {
-      console.log('✅ [App] User config restored from .dlpt file');
-    }
+    setConfig(template.userConfig || template.defaultConfig);
   };
 
   const handleConfigChange = (newConfig: any) => {
-    console.log('🔄 [App] Config changed:', newConfig);
     setConfig(newConfig);
+  };
+
+  const handleFieldFocus = (fieldId: string) => {
+    setFocusedFieldId(fieldId);
+    if (configEditorRef.current?.scrollToField) {
+      configEditorRef.current.scrollToField(fieldId);
+    }
   };
 
   const handleSave = async () => {
     if (!selectedTemplate || !config) {
-      alert('テンプレートと設定を選択してください');
+      alert(t.messages.selectTemplate);
       return;
     }
-
     try {
-      await saveTemplateWithUserConfig(selectedTemplate, config);
-      alert('編集内容を .dlpt ファイルとして保存しました');
+      await saveTemplateWithUserConfig(selectedTemplate as any, config);
+      alert(t.messages.saveSuccess);
     } catch (error) {
       console.error('Save failed:', error);
-      alert('保存に失敗しました');
+      alert(t.messages.saveFailed);
     }
   };
 
   const handleBuild = async () => {
     if (!selectedTemplate || !config) {
-      alert('テンプレートと設定を選択してください');
+      alert(t.messages.selectTemplate);
       return;
     }
 
-    try {
-      const outputDir = await window.electronAPI.selectDirectory();
-      if (!outputDir) return;
-
-      const result = await window.electronAPI.buildLP({
-        template: selectedTemplate,
-        config,
-        outputDir,
-      });
-
-      if (result.success) {
-        alert(`ビルド完了!\n出力先: ${result.outputDir}`);
+    if ((window as any)?.electronAPI?.selectDirectory && (window as any)?.electronAPI?.buildLP) {
+      try {
+        const outputDir = await (window as any).electronAPI.selectDirectory();
+        if (!outputDir) return;
+        const result = await (window as any).electronAPI.buildLP({ template: selectedTemplate, config, outputDir });
+        if (result?.success) {
+          alert(t.messages.buildSuccess.replace('{path}', result.outputDir));
+        }
+      } catch (e) {
+        console.error('Build failed:', e);
+        alert(t.messages.buildFailed);
       }
-    } catch (error) {
-      console.error('Build failed:', error);
-      alert('ビルドに失敗しました');
+    } else {
+      // Fallback: ZIP download
+      try {
+        await exportStaticSiteZip(selectedTemplate as any, config);
+        alert(t.messages.buildSuccess.replace('{path}', 'download'));
+      } catch (e) {
+        console.error('Export zip failed:', e);
+        alert(t.messages.buildFailed);
+      }
     }
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !(window as any).electronAPI) return;
+    const handleMenuOpenTemplate = () => {
+      if (selectedTemplate) {
+        const confirmSwitch = window.confirm(t.messages.confirmSwitchTemplate);
+        if (!confirmSwitch) return;
+      }
+      templateOpenerRef.current?.triggerOpenTemplate();
+    };
+    const handleMenuExportHTML = () => {
+      handleBuild();
+    };
+    const handleChangeLanguage = (lang: 'ja' | 'en') => {
+      setLanguage(lang);
+    };
+    const removeMenuOpenListener = (window as any).electronAPI.onMenuEvent?.('menu-open-template', handleMenuOpenTemplate);
+    const removeMenuExportListener = (window as any).electronAPI.onMenuEvent?.('menu-export-html', handleMenuExportHTML);
+    const removeLanguageListener = (window as any).electronAPI.onMenuEvent?.('change-language', handleChangeLanguage);
+    return () => {
+      removeMenuOpenListener?.();
+      removeMenuExportListener?.();
+      removeLanguageListener?.();
+    };
+  }, [selectedTemplate, config, t, setLanguage]);
 
   return (
     <div className="app">
       {!selectedTemplate ? (
-        <TemplateOpener onTemplateOpen={handleTemplateOpen} />
+        <TemplateOpener ref={templateOpenerRef} onTemplateOpen={handleTemplateOpen} />
       ) : (
         <>
           <header className="app-header">
             <div className="header-left">
               <Title3>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  <PaintBrush24Regular /> {selectedTemplate.manifest.name}
+                  <PaintBrush24Regular /> {selectedTemplate.manifest?.name}
                 </span>
               </Title3>
               <Button appearance="secondary" size="small" icon={<FolderOpen24Regular />} onClick={() => setSelectedTemplate(null)}>
-                別のテンプレートを開く
+                {t.header.openAnother}
               </Button>
             </div>
             <div className="header-actions">
               <Button appearance="secondary" icon={<Save24Regular />} onClick={handleSave}>
-                保存
+                {t.common.save}
               </Button>
-              {typeof window !== 'undefined' && (window as any).electronAPI && (
-                <Button appearance="primary" icon={<Play24Regular />} onClick={handleBuild}>
-                  ビルド
-                </Button>
-              )}
+              <Button appearance="primary" icon={<Play24Regular />} onClick={handleBuild}>
+                {t.header.build}
+              </Button>
             </div>
           </header>
 
           <div className="app-content">
             <div className="editor-screen">
               <ConfigEditor
+                ref={configEditorRef}
                 schema={selectedTemplate.schema}
                 config={config}
                 onChange={handleConfigChange}
+                focusedFieldId={focusedFieldId}
               />
 
               <div className="editor-preview">
-                <PreviewPane
-                  template={selectedTemplate}
-                  config={config}
-                />
+                <PreviewPane template={selectedTemplate} config={config} onFieldFocus={handleFieldFocus} />
               </div>
             </div>
           </div>
         </>
       )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   );
 }
 

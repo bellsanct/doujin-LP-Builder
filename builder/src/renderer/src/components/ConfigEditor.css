@@ -709,3 +709,26 @@ body.resizing .image-resize-handle {
 .json-editor:focus {
   outline: none;
 }
+
+/* ===== インタラクティブ編集ハイライト ===== */
+.field-highlight {
+  animation: highlight-pulse 2s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(0, 120, 212, 0.1);
+    border-color: #0078d4;
+    box-shadow: 0 0 0 4px rgba(0, 120, 212, 0.2);
+  }
+  50% {
+    background-color: rgba(0, 120, 212, 0.15);
+    border-color: #0078d4;
+    box-shadow: 0 0 0 6px rgba(0, 120, 212, 0.3);
+  }
+  100% {
+    background-color: transparent;
+    border-color: initial;
+    box-shadow: none;
+  }
+}

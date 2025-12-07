@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { ElectronAPI } from '../types/ipc';
 
 console.log('🚀 [Preload] Script starting...');
 
@@ -46,8 +47,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('log-error', category, message, data),
     getLogPath: () => ipcRenderer.invoke('log-get-path'),
     openLogDirectory: () => ipcRenderer.invoke('log-open-directory'),
+    setLogDirectory: () => ipcRenderer.invoke('log-set-directory'),
+    getLogLevel: () => ipcRenderer.invoke('log-get-level'),
+    setLogLevel: (level: 'DEBUG'|'INFO'|'WARN'|'ERROR') => ipcRenderer.invoke('log-set-level', level),
   },
-});
+
+  // メニューイベントリスナー
+  onMenuEvent: (channel: string, callback: (...args: any[]) => void) => {
+    const handler = (_event: any, ...args: any[]) => callback(...args);
+    ipcRenderer.on(channel, handler);
+    // クリーンアップ用の関数を返す
+    return () => ipcRenderer.removeListener(channel, handler);
+  },
+} as ElectronAPI);
 
 console.log('✅ [Preload] Script completed!');
 console.log('✅ [Preload] electronAPI exposed to window');
@@ -55,32 +67,6 @@ console.log('✅ [Preload] electronAPI exposed to window');
 // 型定義をグローバルに追加
 declare global {
   interface Window {
-    electronAPI: {
-      openTemplateFile: () => Promise<any | null>;
-      getRecentTemplates: () => Promise<string[]>;
-      selectFile: (options?: {
-        filters?: { name: string; extensions: string[] }[];
-        properties?: ('openFile' | 'multiSelections')[];
-      }) => Promise<string | null>;
-      selectDirectory: () => Promise<string | null>;
-      readFile: (filePath: string) => Promise<string>;
-      readFileBase64: (filePath: string) => Promise<string>;
-      writeFile: (filePath: string, content: string) => Promise<boolean>;
-      createDirectory: (dirPath: string) => Promise<boolean>;
-      copyFile: (src: string, dest: string) => Promise<boolean>;
-      buildLP: (options: {
-        template: any;
-        config: any;
-        outputDir: string;
-      }) => Promise<{ success: boolean; outputDir: string }>;
-      log: {
-        debug: (category: string, message: string, data?: any) => Promise<void>;
-        info: (category: string, message: string, data?: any) => Promise<void>;
-        warn: (category: string, message: string, data?: any) => Promise<void>;
-        error: (category: string, message: string, data?: any) => Promise<void>;
-        getLogPath: () => Promise<string>;
-        openLogDirectory: () => Promise<void>;
-      };
-    };
+    electronAPI: ElectronAPI;
   }
 }

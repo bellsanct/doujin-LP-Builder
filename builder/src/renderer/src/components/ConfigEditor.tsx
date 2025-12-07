@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import './ConfigEditor.css';
 import { Input, Textarea, Switch, Slider } from '@fluentui/react-components';
 import { ChevronDown20Regular, ChevronRight20Regular, Search20Regular, Dismiss20Regular } from '@fluentui/react-icons';
@@ -7,9 +7,14 @@ interface ConfigEditorProps {
   schema: any;
   config: any;
   onChange: (config: any) => void;
+  focusedFieldId?: string | null;
 }
 
-const ConfigEditor: React.FC<ConfigEditorProps> = ({ schema, config, onChange }) => {
+export interface ConfigEditorRef {
+  scrollToField: (fieldId: string) => void;
+}
+
+const ConfigEditor = forwardRef<ConfigEditorRef, ConfigEditorProps>(({ schema, config, onChange, focusedFieldId }, ref) => {
   // スキーマ形式を判定
   const isFormSchema = schema.formSchema && schema.formSchema.sections;
 
@@ -37,6 +42,20 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ schema, config, onChange })
         { id: 'content', title: 'コンテンツ', icon: '📝', fields: [] },
         { id: 'effects', title: 'エフェクト', icon: '✨', fields: [] },
       ];
+
+  // フィールドID -> セクションIDのマップ
+  const fieldSectionMap = useMemo(() => {
+    const map = new Map<string, string>();
+    try {
+      const srcSections = isFormSchema ? schema.formSchema.sections : [];
+      srcSections?.forEach((sec: any) => {
+        sec?.fields?.forEach((f: any) => {
+          if (f?.id) map.set(f.id, sec.id);
+        });
+      });
+    } catch {}
+    return map;
+  }, [schema, isFormSchema]);
 
   // リサイズハンドラー
   const handleResize = (e: React.MouseEvent) => {
@@ -106,6 +125,131 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ schema, config, onChange })
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
+
+  // フィールドへのスクロール機能
+  const scrollToField = useCallback((fieldId: string) => {
+    console.log('🎯 [ConfigEditor] Scrolling to field:', fieldId);
+    console.log('📊 [ConfigEditor] Current expanded sections:', Array.from(expandedSections));
+    console.log('📊 [ConfigEditor] Current collapsed fields:', Array.from(collapsedFields));
+
+    // フィールド要素を検索
+    const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`) as HTMLElement;
+
+    if (!fieldElement) {
+      console.warn('⚠️ [ConfigEditor] Field element not found in DOM:', fieldId);
+      return;
+    }
+
+    console.log('✅ [ConfigEditor] Field element found:', fieldElement);
+
+    // セクションを展開
+    const sectionElement = fieldElement.closest('[data-section-id]');
+    let needsSectionExpansion = false;
+    let sectionId: string | null = null;
+
+    if (sectionElement) {
+      sectionId = sectionElement.getAttribute('data-section-id');
+      if (sectionId && !expandedSections.has(sectionId)) {
+        console.log('🔓 [ConfigEditor] Expanding section:', sectionId);
+        needsSectionExpansion = true;
+        const newExpanded = new Set(expandedSections);
+        newExpanded.add(sectionId);
+        setExpandedSections(newExpanded);
+      } else {
+        console.log('✅ [ConfigEditor] Section already expanded:', sectionId);
+      }
+    }
+
+    // フィールドの折りたたみを解除
+    let needsFieldExpansion = false;
+    if (collapsedFields.has(fieldId)) {
+      console.log('🔓 [ConfigEditor] Expanding field:', fieldId);
+      needsFieldExpansion = true;
+      const newCollapsed = new Set(collapsedFields);
+      newCollapsed.delete(fieldId);
+      setCollapsedFields(newCollapsed);
+    }
+
+    // 展開が必要な場合は待機時間を長くする
+    const waitTime = (needsSectionExpansion || needsFieldExpansion) ? 400 : 100;
+    console.log(`⏳ [ConfigEditor] Waiting ${waitTime}ms for DOM updates...`);
+
+    // スクロールと視覚的フィードバック
+    setTimeout(() => {
+      console.log('📜 [ConfigEditor] Attempting to scroll to field...');
+
+      // 要素を再取得（展開後にDOMが変わる可能性があるため）
+      const targetElement = document.querySelector(`[data-field-id="${fieldId}"]`) as HTMLElement;
+
+      if (targetElement) {
+        // 要素が表示されているか確認
+        const rect = targetElement.getBoundingClientRect();
+        const isVisible = rect.height > 0 && rect.width > 0;
+        console.log('📊 [ConfigEditor] Element visibility:', { isVisible, rect });
+
+        if (!isVisible) {
+          console.warn('⚠️ [ConfigEditor] Element found but not visible, may be collapsed');
+        }
+
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+
+        console.log('✅ [ConfigEditor] Scroll initiated');
+
+        // 視覚的フィードバック
+        targetElement.classList.add('field-highlight');
+        setTimeout(() => {
+          targetElement.classList.remove('field-highlight');
+        }, 2000);
+      } else {
+        console.error('❌ [ConfigEditor] Field element disappeared after expansion:', fieldId);
+      }
+    }, waitTime);
+  }, [expandedSections, collapsedFields]);
+
+  // 改良版スクロール: 折りたたみとセクション展開に強い
+  const scrollToFieldNew = useCallback((fieldId: string) => {
+    // 対応セクションをスキーマから逆引き
+    const sectionId = fieldSectionMap.get(fieldId) || null;
+
+    let needsSectionExpansion = false;
+    if (sectionId && !expandedSections.has(sectionId)) {
+      const newExpanded = new Set(expandedSections);
+      newExpanded.add(sectionId);
+      setExpandedSections(newExpanded);
+      needsSectionExpansion = true;
+    }
+
+    let needsFieldExpansion = false;
+    if (collapsedFields.has(fieldId)) {
+      const newCollapsed = new Set(collapsedFields);
+      newCollapsed.delete(fieldId);
+      setCollapsedFields(newCollapsed);
+      needsFieldExpansion = true;
+    }
+
+    const waitTime = (needsSectionExpansion || needsFieldExpansion) ? 400 : 100;
+
+    setTimeout(() => {
+      const containerId = `field-${fieldId}`;
+      const container = document.getElementById(containerId) as HTMLElement | null;
+      const inputEl = document.querySelector(`[data-field-id="${fieldId}"]`) as HTMLElement | null;
+      const targetElement = container || inputEl;
+
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetElement.classList.add('field-highlight');
+        setTimeout(() => targetElement.classList.remove('field-highlight'), 2000);
+      }
+    }, waitTime);
+  }, [expandedSections, collapsedFields, fieldSectionMap]);
+
+  // 外部から呼び出せるメソッドを公開
+  useImperativeHandle(ref, () => ({
+    scrollToField: scrollToFieldNew,
+  }));
 
   // 値の取得と更新（即座に反映）
   const handleChange = (path: string[], value: any) => {
@@ -585,7 +729,7 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ schema, config, onChange })
                 const isExpanded = expandedSections.has(section.id);
 
                 return (
-                  <div key={section.id} className="accordion-section">
+                  <div key={section.id} className="accordion-section" data-section-id={section.id}>
                     <button
                       className={`section-button ${isExpanded ? 'expanded' : ''}`}
                       onClick={() => toggleSection(section.id)}
@@ -620,6 +764,8 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ schema, config, onChange })
       </main>
     </div>
   );
-};
+});
+
+ConfigEditor.displayName = 'ConfigEditor';
 
 export default ConfigEditor;

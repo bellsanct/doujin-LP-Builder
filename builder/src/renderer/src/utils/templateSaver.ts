@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import Handlebars from 'handlebars';
 
 interface Template {
   filePath: string;
@@ -8,7 +9,7 @@ interface Template {
   template: string;
   styles: string;
   scripts: string;
-  assets: Map<string, Buffer | Uint8Array>;
+  assets: any;
 }
 
 export async function saveTemplateWithUserConfig(
@@ -53,6 +54,57 @@ export async function saveTemplateWithUserConfig(
   const fileName = `${template.manifest.id || 'template'}_draft.dlpt`;
 
   // ダウンロード
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
+
+// Fallback build: browser-side ZIP of static site (index.html, style.css, script.js, assets)
+export async function exportStaticSiteZip(template: Template, config: any): Promise<void> {
+  const zip = new JSZip();
+
+  // Compile HTML using Handlebars
+  const compiled = Handlebars.compile(template.template);
+  const html = compiled(config);
+
+  zip.file('index.html', html);
+  zip.file('style.css', template.styles || '');
+  if (template.scripts) {
+    zip.file('script.js', template.scripts);
+  }
+
+  // Write assets for Map / Array / Object
+  const addAsset = (filename: string, data: any) => {
+    if (!filename) return;
+    if (data instanceof Uint8Array || Array.isArray(data)) {
+      zip.file(filename, data as any);
+    } else if (typeof data === 'string') {
+      // Try base64 string
+      zip.file(filename, data, { base64: true });
+    } else if (typeof Buffer !== 'undefined' && (data as any)?.type === 'Buffer' && Array.isArray((data as any).data)) {
+      zip.file(filename, (data as any).data);
+    }
+  };
+
+  const assets = template.assets;
+  try {
+    if (assets) {
+      if (typeof assets.forEach === 'function' && typeof assets.size === 'number') {
+        (assets as Map<string, any>).forEach((data: any, filename: string) => addAsset(filename, data));
+      } else if (Array.isArray(assets)) {
+        for (const a of assets) addAsset(a.filename, a.data);
+      } else if (typeof assets === 'object') {
+        for (const k of Object.keys(assets)) addAsset(k, (assets as any)[k]);
+      }
+    }
+  } catch {}
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const fileName = `${template.manifest?.id || 'lp'}-build.zip`;
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = fileName;

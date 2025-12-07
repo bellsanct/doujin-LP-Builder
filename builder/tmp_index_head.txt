@@ -1,0 +1,140 @@
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs/promises';
+import { loadTemplate, validateTemplateFile } from './templateLoader';
+import { logger } from './logger';
+
+let mainWindow: BrowserWindow | null = null;
+
+/**
+ * 繧｢繝励Μ繧ｱ繝ｼ繧ｷ繝ｧ繝ｳ繝｡繝九Η繝ｼ繧剃ｽ懈・
+ */
+function createApplicationMenu() {
+  const isMac = process.platform === 'darwin';
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    // Mac縺ｮ蝣ｴ蜷医・繧｢繝励Μ繧ｱ繝ｼ繧ｷ繝ｧ繝ｳ繝｡繝九Η繝ｼ
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' as const },
+        { type: 'separator' as const },
+        { role: 'services' as const },
+        { type: 'separator' as const },
+        { role: 'hide' as const },
+        { role: 'hideOthers' as const },
+        { role: 'unhide' as const },
+        { type: 'separator' as const },
+        { role: 'quit' as const }
+      ]
+    }] : []),
+
+    // 繝輔ぃ繧､繝ｫ繝｡繝九Η繝ｼ
+    {
+      label: '繝輔ぃ繧､繝ｫ',
+      submenu: [
+        {
+          label: '繝・Φ繝励Ξ繝ｼ繝医ｒ髢九￥...',
+          accelerator: 'CmdOrCtrl+O',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-open-template');
+            }
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '繝ｭ繧ｰ菫晏ｭ伜・繧貞､画峩...',
+          click: async () => {
+            const result = await dialog.showOpenDialog({ properties: ['openDirectory','createDirectory'] });
+            if (!result.canceled && result.filePaths?.[0]) {
+              await logger.setLogDirectory(result.filePaths[0]);
+              dialog.showMessageBox({ type: 'info', title: '繝ｭ繧ｰ菫晏ｭ伜・', message: '繝ｭ繧ｰ菫晏ｭ伜・繧貞､画峩縺励∪縺励◆', detail: logger.getLogDirectory() });
+            }
+          }
+        },
+        {
+          label: 'HTML繧偵お繧ｯ繧ｹ繝昴・繝・..',
+          accelerator: 'CmdOrCtrl+S',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('menu-export-html');
+            }
+          }
+        },
+        { type: 'separator' },
+        isMac ? { role: 'close' } : { role: 'quit' }
+      ]
+    },
+
+    // 邱ｨ髮・Γ繝九Η繝ｼ
+    {
+      label: '邱ｨ髮・,
+      submenu: [
+        { role: 'undo', label: '蜈・↓謌ｻ縺・ },
+        { role: 'redo', label: '繧・ｊ逶ｴ縺・ },
+        { type: 'separator' },
+        { role: 'cut', label: '蛻・ｊ蜿悶ｊ' },
+        { role: 'copy', label: '繧ｳ繝斐・' },
+        { role: 'paste', label: '雋ｼ繧贋ｻ倥￠' },
+        { role: 'delete', label: '蜑企勁' },
+        { type: 'separator' },
+        { role: 'selectAll', label: '縺吶∋縺ｦ驕ｸ謚・ }
+      ]
+    },
+
+    // 陦ｨ遉ｺ繝｡繝九Η繝ｼ
+    {
+      label: '陦ｨ遉ｺ',
+      submenu: [
+        { role: 'reload', label: '蜀崎ｪｭ縺ｿ霎ｼ縺ｿ' },
+        { role: 'forceReload', label: '蠑ｷ蛻ｶ蜀崎ｪｭ縺ｿ霎ｼ縺ｿ' },
+        { role: 'toggleDevTools', label: '髢狗匱閠・ヤ繝ｼ繝ｫ' },
+        { type: 'separator' },
+        { role: 'resetZoom', label: '螳滄圀縺ｮ繧ｵ繧､繧ｺ' },
+        { role: 'zoomIn', label: '諡｡螟ｧ' },
+        { role: 'zoomOut', label: '邵ｮ蟆・ },
+        { type: 'separator' },
+        { role: 'togglefullscreen', label: '繝輔Ν繧ｹ繧ｯ繝ｪ繝ｼ繝ｳ' }
+      ]
+    },
+
+    // 繝倥Ν繝励Γ繝九Η繝ｼ
+    {
+      label: '繝倥Ν繝・,
+      submenu: [
+        {
+          label: '繝峨く繝･繝｡繝ｳ繝医ｒ髢九￥',
+          click: async () => {
+            await shell.openExternal('https://github.com/bellsanct/doujin-LP-Builder');
+          }
+        },
+        {
+          label: 'GitHub',
+          click: async () => {
+            await shell.openExternal('https://github.com/bellsanct/doujin-LP-Builder');
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '繝ｭ繧ｰ繝輔か繝ｫ繝繧帝幕縺・,
+          click: async () => {
+            const logDir = logger.getLogDirectory();
+            await shell.openPath(logDir);
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '繝舌・繧ｸ繝ｧ繝ｳ諠・ｱ',
+          click: async () => {
+            dialog.showMessageBox({
+              type: 'info',
+              title: '繝舌・繧ｸ繝ｧ繝ｳ諠・ｱ',
+              message: 'Doujin LP Builder',
+              detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nChrome: ${process.versions.chrome}\nNode.js: ${process.versions.node}`
+            });
+          }
+        }
+      ]
+    }
+  ];

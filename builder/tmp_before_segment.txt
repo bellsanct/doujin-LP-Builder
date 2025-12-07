@@ -1,0 +1,78 @@
+﻿  const scrollToField = useCallback((fieldId: string) => {
+    console.log('識 [ConfigEditor] Scrolling to field:', fieldId);
+    console.log('投 [ConfigEditor] Current expanded sections:', Array.from(expandedSections));
+    console.log('投 [ConfigEditor] Current collapsed fields:', Array.from(collapsedFields));
+
+    // 繝輔ぅ繝ｼ繝ｫ繝芽ｦ∫ｴ繧呈､懃ｴ｢
+    const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`) as HTMLElement;
+
+    if (!fieldElement) {
+      console.warn('笞・・[ConfigEditor] Field element not found in DOM:', fieldId);
+      return;
+    }
+
+    console.log('笨・[ConfigEditor] Field element found:', fieldElement);
+
+    // 繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ繧貞ｱ暮幕
+    const sectionElement = fieldElement.closest('[data-section-id]');
+    let needsSectionExpansion = false;
+    let sectionId: string | null = null;
+
+    if (sectionElement) {
+      sectionId = sectionElement.getAttribute('data-section-id');
+      if (sectionId && !expandedSections.has(sectionId)) {
+        console.log('箔 [ConfigEditor] Expanding section:', sectionId);
+        needsSectionExpansion = true;
+        const newExpanded = new Set(expandedSections);
+        newExpanded.add(sectionId);
+        setExpandedSections(newExpanded);
+      } else {
+        console.log('笨・[ConfigEditor] Section already expanded:', sectionId);
+      }
+    }
+
+    // 繝輔ぅ繝ｼ繝ｫ繝峨・謚倥ｊ縺溘◆縺ｿ繧定ｧ｣髯､
+    let needsFieldExpansion = false;
+    if (collapsedFields.has(fieldId)) {
+      console.log('箔 [ConfigEditor] Expanding field:', fieldId);
+      needsFieldExpansion = true;
+      const newCollapsed = new Set(collapsedFields);
+      newCollapsed.delete(fieldId);
+      setCollapsedFields(newCollapsed);
+    }
+
+    // 螻暮幕縺悟ｿ・ｦ√↑蝣ｴ蜷医・蠕・ｩ滓凾髢薙ｒ髟ｷ縺上☆繧・    const waitTime = (needsSectionExpansion || needsFieldExpansion) ? 400 : 100;
+    console.log(`竢ｳ [ConfigEditor] Waiting ${waitTime}ms for DOM updates...`);
+
+    // 繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ縺ｨ隕冶ｦ夂噪繝輔ぅ繝ｼ繝峨ヰ繝・け
+    setTimeout(() => {
+      console.log('糖 [ConfigEditor] Attempting to scroll to field...');
+
+      // 隕∫ｴ繧貞・蜿門ｾ暦ｼ亥ｱ暮幕蠕後↓DOM縺悟､峨ｏ繧句庄閭ｽ諤ｧ縺後≠繧九◆繧・ｼ・      const targetElement = document.querySelector(`[data-field-id="${fieldId}"]`) as HTMLElement;
+
+      if (targetElement) {
+        // 隕∫ｴ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｦ縺・ｋ縺狗｢ｺ隱・        const rect = targetElement.getBoundingClientRect();
+        const isVisible = rect.height > 0 && rect.width > 0;
+        console.log('投 [ConfigEditor] Element visibility:', { isVisible, rect });
+
+        if (!isVisible) {
+          console.warn('笞・・[ConfigEditor] Element found but not visible, may be collapsed');
+        }
+
+        targetElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+
+        console.log('笨・[ConfigEditor] Scroll initiated');
+
+        // 隕冶ｦ夂噪繝輔ぅ繝ｼ繝峨ヰ繝・け
+        targetElement.classList.add('field-highlight');
+        setTimeout(() => {
+          targetElement.classList.remove('field-highlight');
+        }, 2000);
+      } else {
+        console.error('笶・[ConfigEditor] Field element disappeared after expansion:', fieldId);
+      }
+    }, waitTime);
+  }, [expandedSections, collapsedFields]);

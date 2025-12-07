@@ -1,0 +1,113 @@
+﻿  const setupInteractiveEditing = useCallback((doc: Document) => {
+    console.log('肌 [PreviewPane] Starting setupInteractiveEditing...');
+    console.log('投 [PreviewPane] Document body children count:', doc.body?.children?.length || 0);
+
+    // 繝・ヰ繝・げ: 繝峨く繝･繝｡繝ｳ繝亥・縺ｮ縺吶∋縺ｦ縺ｮ繧ｯ繝ｩ繧ｹ繧貞叙蠕・    const allElements = doc.querySelectorAll('*');
+    const allClasses = new Set<string>();
+    allElements.forEach((el) => {
+      const classList = el.classList;
+      classList.forEach((cls) => allClasses.add(cls));
+    });
+    console.log('投 [PreviewPane] All CSS classes in document:', Array.from(allClasses).sort());
+
+    // 繝輔ぅ繝ｼ繝ｫ繝迂D縺ｨ繧ｻ繝ｬ繧ｯ繧ｿ縺ｮ繝槭ャ繝斐Φ繧ｰ
+    const fieldSelectors: Record<string, string> = {
+      // Hero section
+      'heroTitle': '.hero-title, h1.hero-title',
+      'heroBadge': '.hero-badge',
+      'heroImage': '.hero, header.hero',
+
+      // About section
+      'aboutTitle': '#about .section-title, .about .section-title',
+      'aboutText': '#about .text-body, #about .about-content p',
+
+      // Release/Album section
+      'albumTitle': '.album-title, h2.album-title',
+      'artistName': '.artist-name, p.artist-name',
+      'jacketImage': '.jacket-img, .jacket-frame img, .jacket-container img',
+
+      // Shop links
+      'shopLinks': '.shop-links, .purchase-links, .buy-links',
+    };
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // 蜷・ヵ繧｣繝ｼ繝ｫ繝峨↓蟇ｾ縺励※螻樊ｧ繧定ｿｽ蜉
+    Object.entries(fieldSelectors).forEach(([fieldId, selector]) => {
+      try {
+        console.log(`剥 [PreviewPane] Trying selector for ${fieldId}: "${selector}"`);
+        const elements = doc.querySelectorAll(selector);
+        console.log(`   Found ${elements.length} element(s)`);
+
+        if (elements.length === 0) {
+          failCount++;
+          console.warn(`笞・・[PreviewPane] No elements found for ${fieldId} with selector: ${selector}`);
+        } else {
+          successCount++;
+        }
+
+        elements.forEach((element, index) => {
+          const htmlElement = element as HTMLElement;
+          console.log(`   Element ${index}: ${htmlElement.tagName}.${Array.from(htmlElement.classList).join('.')}`);
+
+          // data-field-id 縺ｨ data-editable 螻樊ｧ繧定ｿｽ蜉
+          htmlElement.setAttribute('data-field-id', fieldId);
+          htmlElement.setAttribute('data-editable', 'true');
+          console.log(`   笨・Added attributes to element ${index}`);
+
+          // 繧ｯ繝ｪ繝・け繧､繝吶Φ繝・ ConfigEditor縺ｫ繝輔か繝ｼ繧ｫ繧ｹ
+          htmlElement.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('務・・[PreviewPane] Field clicked:', fieldId);
+
+            // 蜑阪・驕ｸ謚槭ｒ隗｣髯､
+            doc.querySelectorAll('[data-editable="true"].focused').forEach((el) => {
+              el.classList.remove('focused');
+            });
+
+            // 迴ｾ蝨ｨ縺ｮ隕∫ｴ繧帝∈謚・            htmlElement.classList.add('focused');
+
+            // ConfigEditor縺ｫ繝輔か繝ｼ繧ｫ繧ｹ騾夂衍
+            if (onFieldFocus) {
+              console.log('討 [PreviewPane] Calling onFieldFocus with:', fieldId);
+              onFieldFocus(fieldId);
+            } else {
+              console.warn('笞・・[PreviewPane] onFieldFocus is not defined!');
+            }
+          });
+          console.log(`   笨・Added click listener to element ${index}`);
+        });
+
+        if (elements.length > 0) {
+          console.log(`笨・[PreviewPane] Successfully mapped ${elements.length} element(s) to field: ${fieldId}`);
+        }
+      } catch (error) {
+        failCount++;
+        console.error(`笶・[PreviewPane] Failed to setup field: ${fieldId}`, error);
+      }
+    });
+
+    const totalEditable = doc.querySelectorAll('[data-editable="true"]').length;
+    console.log(`笨・[PreviewPane] Setup complete: ${successCount} successful, ${failCount} failed`);
+    console.log(`笨・[PreviewPane] Total editable elements: ${totalEditable}`);
+
+    if (totalEditable === 0) {
+      console.error('笶・[PreviewPane] WARNING: No editable elements were set up! Check selectors.');
+    }
+  }, [onFieldFocus]);
+
+  useEffect(() => {
+    console.log('耳 [PreviewPane] useEffect triggered with config:', config);
+    if (!iframeRef.current) return;
+
+    // Handlebars繝倥Ν繝代・繧堤匳骭ｲ
+    Handlebars.registerHelper('equals', function(a, b, options) {
+      return a === b ? options.fn(this) : options.inverse(this);
+    });
+
+    Handlebars.registerHelper('contains', function(array, item, options) {
+      if (Array.isArray(array) && array.includes(item)) {
+        return options.fn(this);

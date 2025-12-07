@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import './TemplateOpener.css';
 import { Button, Spinner, Title1, Body1 } from '@fluentui/react-components';
 import { PaintBrush24Regular, FolderOpen24Regular, Document24Regular, Warning24Regular, Lightbulb24Regular } from '@fluentui/react-icons';
@@ -8,7 +8,11 @@ interface TemplateOpenerProps {
   onTemplateOpen: (template: any) => void;
 }
 
-const TemplateOpener: React.FC<TemplateOpenerProps> = ({ onTemplateOpen }) => {
+export interface TemplateOpenerRef {
+  triggerOpenTemplate: () => void;
+}
+
+const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onTemplateOpen }, ref) => {
   const [recentFiles, setRecentFiles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +21,11 @@ const TemplateOpener: React.FC<TemplateOpenerProps> = ({ onTemplateOpen }) => {
   useEffect(() => {
     loadRecentFiles();
   }, []);
+
+  // 外部から呼び出せるメソッドを公開
+  useImperativeHandle(ref, () => ({
+    triggerOpenTemplate: handleOpenFile,
+  }));
 
   const loadRecentFiles = async () => {
     try {
@@ -67,7 +76,7 @@ const TemplateOpener: React.FC<TemplateOpenerProps> = ({ onTemplateOpen }) => {
         <div className="opener-header">
           <Title1>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <PaintBrush24Regular /> Doujin LP Builder
+              <PaintBrush24Regular /> Criclify : 同人サークルのためのホームページビルダー
             </span>
           </Title1>
           <p className="opener-subtitle">テンプレートファイル (.zip) を開いて、LPを作成しましょう</p>
@@ -157,6 +166,8 @@ const TemplateOpener: React.FC<TemplateOpenerProps> = ({ onTemplateOpen }) => {
       </div>
     </div>
   );
-};
+});
+
+TemplateOpener.displayName = 'TemplateOpener';
 
 export default TemplateOpener;

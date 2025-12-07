@@ -1,7 +1,8 @@
 {
   "name": "doujin-lp-builder",
+  "productName": "Criclify",
   "version": "1.0.0",
-  "description": "Desktop application for building doujin landing pages",
+  "description": "Criclify : 同人サークルのためのホームページビルダー",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:electron\"",

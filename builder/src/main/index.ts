@@ -1,19 +1,110 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+﻿import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { loadTemplate, validateTemplateFile } from './templateLoader';
 import { logger } from './logger';
+import type { BuildRequest, BuildResult } from '../types/ipc';
+import type { TemplateArchive } from '../types/template';
+import { getMainTranslations, Language } from './i18n';
 
 let mainWindow: BrowserWindow | null = null;
+let currentLanguage: Language = 'ja';
+
+function createApplicationMenu() {
+  const isMac = process.platform === 'darwin';
+  const t = getMainTranslations(currentLanguage);
+  const template: Electron.MenuItemConstructorOptions[] = [
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' as const },
+        { type: 'separator' as const },
+        { role: 'services' as const },
+        { type: 'separator' as const },
+        { role: 'hide' as const },
+        { role: 'hideOthers' as const },
+        { role: 'unhide' as const },
+        { type: 'separator' as const },
+        { role: 'quit' as const }
+      ]
+    }] : []),
+    {
+      label: t.menu.file,
+      submenu: [
+        { label: t.menu.openTemplate, accelerator: 'CmdOrCtrl+O', click: () => mainWindow?.webContents.send('menu-open-template') },
+        { label: t.menu.exportHTML, accelerator: 'CmdOrCtrl+S', click: () => mainWindow?.webContents.send('menu-export-html') },
+        { type: 'separator' },
+        isMac ? { role: 'close' } : { role: 'quit' }
+      ]
+    },
+    {
+      label: t.menu.view,
+      submenu: [
+        { label: t.menu.reload, role: 'reload' },
+        { label: t.menu.forceReload, role: 'forceReload' },
+        { label: t.menu.toggleDevTools, role: 'toggleDevTools' },
+        { type: 'separator' },
+        { label: t.menu.resetZoom, role: 'resetZoom' },
+        { label: t.menu.zoomIn, role: 'zoomIn' },
+        { label: t.menu.zoomOut, role: 'zoomOut' },
+        { type: 'separator' },
+        { label: t.menu.toggleFullscreen, role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: t.menu.language,
+      submenu: [
+        {
+          label: t.menu.japanese,
+          type: 'radio',
+          checked: currentLanguage === 'ja',
+          click: () => {
+            currentLanguage = 'ja';
+            mainWindow?.webContents.send('change-language', 'ja');
+            createApplicationMenu();
+          }
+        },
+        {
+          label: t.menu.english,
+          type: 'radio',
+          checked: currentLanguage === 'en',
+          click: () => {
+            currentLanguage = 'en';
+            mainWindow?.webContents.send('change-language', 'en');
+            createApplicationMenu();
+          }
+        }
+      ]
+    },
+    {
+      label: t.menu.help,
+      submenu: [
+        { label: t.menu.openDocs, click: async () => { await shell.openExternal('https://github.com/bellsanct/doujin-LP-Builder'); } },
+        { label: t.menu.openLogFolder, click: async () => { const logDir = logger.getLogDirectory(); await shell.openPath(logDir); } },
+        { type: 'separator' },
+        { label: t.menu.about, click: async () => {
+          const detail = t.dialogs.aboutDetail
+            .replace('{version}', app.getVersion())
+            .replace('{electron}', process.versions.electron)
+            .replace('{chrome}', process.versions.chrome)
+            .replace('{node}', process.versions.node);
+          dialog.showMessageBox({
+            type: 'info',
+            title: t.menu.about,
+            message: t.dialogs.aboutMessage,
+            detail
+          });
+        } }
+      ]
+    }
+  ];
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
 
 function createWindow() {
-  // 絶対パスでpreloadスクリプトを指定
+  const t = getMainTranslations(currentLanguage);
   const preloadPath = path.resolve(__dirname, '../preload/index.js');
-
-  console.log('🔍 [Main] __dirname:', __dirname);
-  console.log('🔍 [Main] Preload script path:', preloadPath);
-  console.log('🔍 [Main] Preload exists:', require('fs').existsSync(preloadPath));
-
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -23,348 +114,118 @@ function createWindow() {
       preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true,
-      // 開発時に必要な設定を追加
       sandbox: false,
     },
-    title: 'Doujin LP Builder',
+    title: t.dialogs.aboutMessage,
     backgroundColor: '#ffffff',
   });
-
-  // 開発モードではローカルサーバーから、本番ではビルドされたファイルから読み込み
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
+  mainWindow.on('closed', () => { mainWindow = null; });
 }
 
 app.whenReady().then(() => {
-  logger.info('App', 'Application started', {
-    version: app.getVersion(),
-    platform: process.platform,
-    arch: process.arch,
-  });
-
+  createApplicationMenu();
   createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 
-// IPC Handlers
-
-/**
- * テンプレートZIPファイルを開くダイアログを表示
- */
+// IPC
 ipcMain.handle('open-template-file', async () => {
-  try {
-    const result = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [
-        { name: 'Template Archive', extensions: ['zip'] },
-        { name: 'All Files', extensions: ['*'] }
-      ],
-      title: 'テンプレートファイルを開く'
-    });
-
-    if (result.canceled || result.filePaths.length === 0) {
-      return null;
-    }
-
-    const filePath = result.filePaths[0];
-    console.log('📂 [Main] Opening template file:', filePath);
-
-    // ファイルの妥当性を検証
-    const validation = validateTemplateFile(filePath);
-    if (!validation.valid) {
-      console.error('❌ [Main] Invalid template file:', validation.errors);
-      throw new Error(`Invalid template file:\n${validation.errors.join('\n')}`);
-    }
-
-    // テンプレートを読み込み
-    const template = await loadTemplate(filePath);
-
-    // 最近使ったファイルリストに追加
-    await addRecentTemplate(filePath);
-
-    // BufferをIPCで送信できる形式に変換
-    const serializedTemplate = {
-      ...template,
-      assets: Array.from(template.assets.entries()).map(([filename, buffer]) => ({
-        filename,
-        data: Array.from(buffer), // BufferをUint8Arrayに変換
-      })),
-    };
-
-    return serializedTemplate;
-  } catch (error) {
-    console.error('❌ [Main] Failed to open template file:', error);
-    throw error;
+  const t = getMainTranslations(currentLanguage);
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [
+      { name: 'Template Archive', extensions: ['zip','dlpt'] },
+      { name: 'All Files', extensions: ['*'] }
+    ],
+    title: t.dialogs.openTemplateTitle
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  const filePath = result.filePaths[0];
+  const validation = validateTemplateFile(filePath);
+  if (!validation.valid) {
+    throw new Error(`Invalid template file:\n${validation.errors.join('\n')}`);
   }
+  const template = await loadTemplate(filePath);
+  await addRecentTemplate(filePath);
+  // serialize assets Map to array of {filename, data:number[]}
+  const serialized: any = {
+    ...template,
+    assets: Array.from(template.assets.entries()).map(([filename, buffer]) => ({ filename, data: Array.from(buffer) })),
+  };
+  return serialized as TemplateArchive;
 });
 
-/**
- * 最近使ったテンプレートファイルのリストを取得
- */
 ipcMain.handle('get-recent-templates', async () => {
   try {
-    const userDataPath = app.getPath('userData');
-    const recentPath = path.join(userDataPath, 'recent-templates.json');
-
+    const recentPath = path.join(app.getPath('userData'), 'recent-templates.json');
     const data = await fs.readFile(recentPath, 'utf8');
     return JSON.parse(data);
-  } catch (error) {
-    // ファイルが存在しない場合は空配列を返す
-    return [];
-  }
+  } catch { return []; }
 });
 
-/**
- * 最近使ったテンプレートリストに追加（内部関数）
- */
 async function addRecentTemplate(filePath: string): Promise<void> {
   try {
-    const userDataPath = app.getPath('userData');
-    const recentPath = path.join(userDataPath, 'recent-templates.json');
-
+    const recentPath = path.join(app.getPath('userData'), 'recent-templates.json');
     let recent: string[] = [];
-    try {
-      const data = await fs.readFile(recentPath, 'utf8');
-      recent = JSON.parse(data);
-    } catch {
-      // ファイルが存在しない場合は空配列から開始
-    }
-
-    // 重複を削除し、先頭に追加
-    recent = recent.filter(p => p !== filePath);
-    recent.unshift(filePath);
-    recent = recent.slice(0, 10); // 最大10件
-
+    try { recent = JSON.parse(await fs.readFile(recentPath, 'utf8')); } catch {}
+    recent = [filePath, ...recent.filter(p => p !== filePath)].slice(0, 10);
     await fs.writeFile(recentPath, JSON.stringify(recent, null, 2));
-  } catch (error) {
-    console.error('Failed to save recent template:', error);
-  }
+  } catch (e) { console.error('Failed to save recent template:', e); }
 }
 
-/**
- * ファイル選択ダイアログを開く
- */
-ipcMain.handle('select-file', async (event, options: {
-  filters?: { name: string; extensions: string[] }[];
-  properties?: ('openFile' | 'multiSelections')[];
-}) => {
-  const result = await dialog.showOpenDialog({
-    properties: options.properties || ['openFile'],
-    filters: options.filters || [],
-  });
-  
-  if (result.canceled || result.filePaths.length === 0) {
-    return null;
-  }
-  
-  return result.filePaths[0];
+ipcMain.handle('select-file', async (_e, options?: { filters?: { name: string; extensions: string[] }[]; properties?: ('openFile'|'multiSelections')[]; }) => {
+  const res = await dialog.showOpenDialog({ properties: options?.properties ?? ['openFile'], filters: options?.filters });
+  return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0];
 });
 
-/**
- * ファイルを読み込む
- */
-ipcMain.handle('read-file', async (event, filePath: string) => {
-  try {
-    const data = await fs.readFile(filePath, 'utf-8');
-    return data;
-  } catch (error) {
-    console.error('Failed to read file:', error);
-    throw error;
-  }
-});
-
-/**
- * ファイルをBase64で読み込む
- */
-ipcMain.handle('read-file-base64', async (event, filePath: string) => {
-  try {
-    const data = await fs.readFile(filePath);
-    return data.toString('base64');
-  } catch (error) {
-    console.error('Failed to read file as base64:', error);
-    throw error;
-  }
-});
-
-/**
- * ディレクトリ選択ダイアログを開く
- */
 ipcMain.handle('select-directory', async () => {
-  const result = await dialog.showOpenDialog({
-    properties: ['openDirectory', 'createDirectory'],
-  });
-  
-  if (result.canceled || result.filePaths.length === 0) {
-    return null;
-  }
-  
-  return result.filePaths[0];
+  const res = await dialog.showOpenDialog({ properties: ['openDirectory','createDirectory'] });
+  return res.canceled || res.filePaths.length === 0 ? null : res.filePaths[0];
 });
 
-/**
- * ファイルを保存
- */
-ipcMain.handle('write-file', async (event, filePath: string, content: string) => {
-  try {
-    await fs.writeFile(filePath, content, 'utf-8');
-    return true;
-  } catch (error) {
-    console.error('Failed to write file:', error);
-    throw error;
-  }
-});
+ipcMain.handle('read-file', async (_e, filePath: string) => await fs.readFile(filePath, 'utf8'));
+ipcMain.handle('read-file-base64', async (_e, filePath: string) => (await fs.readFile(filePath)).toString('base64'));
+ipcMain.handle('write-file', async (_e, filePath: string, content: string) => { await fs.writeFile(filePath, content, 'utf8'); return true; });
+ipcMain.handle('create-directory', async (_e, dirPath: string) => { await fs.mkdir(dirPath, { recursive: true }); return true; });
+ipcMain.handle('copy-file', async (_e, src: string, dest: string) => { await fs.copyFile(src, dest); return true; });
 
-/**
- * ディレクトリを作成
- */
-ipcMain.handle('create-directory', async (event, dirPath: string) => {
-  try {
-    await fs.mkdir(dirPath, { recursive: true });
-    return true;
-  } catch (error) {
-    console.error('Failed to create directory:', error);
-    throw error;
-  }
-});
-
-/**
- * ファイルをコピー
- */
-ipcMain.handle('copy-file', async (event, src: string, dest: string) => {
-  try {
-    await fs.copyFile(src, dest);
-    return true;
-  } catch (error) {
-    console.error('Failed to copy file:', error);
-    throw error;
-  }
-});
-
-/**
- * LPをビルド
- */
-ipcMain.handle('build-lp', async (event, options: {
-  template: any;
-  config: any;
-  outputDir: string;
-}) => {
-  try {
-    const { template, config, outputDir } = options;
-
-    console.log('🔨 [Main] Building LP to:', outputDir);
-
-    // 出力ディレクトリを作成
-    await fs.mkdir(outputDir, { recursive: true });
-
-    // Handlebarsをインポート（遅延ロード）
-    const Handlebars = require('handlebars');
-
-    // Handlebarsヘルパーを登録
-    Handlebars.registerHelper('equals', function(this: any, a: any, b: any, options: any) {
-      return a === b ? options.fn(this) : options.inverse(this);
-    });
-
-    Handlebars.registerHelper('contains', function(this: any, array: any, item: any, options: any) {
-      if (Array.isArray(array) && array.includes(item)) {
-        return options.fn(this);
-      }
-      return options.inverse(this);
-    });
-
-    Handlebars.registerHelper('extractYouTubeID', function(url: string) {
-      if (!url) return '';
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-      const match = url.match(regExp);
-      return (match && match[2].length === 11) ? match[2] : '';
-    });
-
-    // Handlebarsでテンプレートをコンパイル＆レンダリング
-    const compiledTemplate = Handlebars.compile(template.template);
-    const renderedHtml = compiledTemplate(config);
-
-    // HTMLファイルを保存
-    await fs.writeFile(path.join(outputDir, 'index.html'), renderedHtml, 'utf-8');
-    console.log('  ✅ index.html');
-
-    // CSSファイルを保存
-    await fs.writeFile(path.join(outputDir, 'style.css'), template.styles, 'utf-8');
-    console.log('  ✅ style.css');
-
-    // JSファイルを保存
-    if (template.scripts) {
-      await fs.writeFile(path.join(outputDir, 'script.js'), template.scripts, 'utf-8');
-      console.log('  ✅ script.js');
+ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildResult> => {
+  const { template, config, outputDir } = options;
+  await fs.mkdir(outputDir, { recursive: true });
+  const Handlebars = require('handlebars');
+  const compiled = Handlebars.compile(template.template);
+  const renderedHtml = compiled(config);
+  await fs.writeFile(path.join(outputDir, 'index.html'), renderedHtml, 'utf-8');
+  await fs.writeFile(path.join(outputDir, 'style.css'), template.styles, 'utf-8');
+  if (template.scripts) await fs.writeFile(path.join(outputDir, 'script.js'), template.scripts, 'utf-8');
+  if (Array.isArray((template as any).assets)) {
+    for (const a of (template as any).assets as { filename: string; data: number[] }[]) {
+      const assetPath = path.join(outputDir, a.filename);
+      await fs.mkdir(path.dirname(assetPath), { recursive: true });
+      await fs.writeFile(assetPath, Buffer.from(a.data));
     }
-
-    // アセット（画像など）を保存
-    if (template.assets && Array.isArray(template.assets) && template.assets.length > 0) {
-      for (const asset of template.assets) {
-        const assetPath = path.join(outputDir, asset.filename);
-        const assetDir = path.dirname(assetPath);
-
-        // サブディレクトリがあれば作成
-        await fs.mkdir(assetDir, { recursive: true });
-
-        // Bufferに変換して書き込み
-        const buffer = Buffer.from(asset.data);
-        await fs.writeFile(assetPath, buffer);
-        console.log(`  ✅ ${asset.filename}`);
-      }
-    }
-
-    console.log('✅ [Main] Build completed successfully');
-
-    return {
-      success: true,
-      outputDir,
-    };
-  } catch (error) {
-    console.error('❌ [Main] Failed to build LP:', error);
-    throw error;
   }
+  return { success: true, outputDir };
 });
 
-// ログ関連のIPCハンドラー
-ipcMain.handle('log-debug', async (event, category: string, message: string, data?: any) => {
-  logger.debug(category, message, data);
+// logger IPC
+ipcMain.handle('log-debug', async (_e, c: string, m: string, d?: unknown) => { logger.debug(c, m, d); });
+ipcMain.handle('log-info', async (_e, c: string, m: string, d?: unknown) => { logger.info(c, m, d); });
+ipcMain.handle('log-warn', async (_e, c: string, m: string, d?: unknown) => { logger.warn(c, m, d); });
+ipcMain.handle('log-error', async (_e, c: string, m: string, d?: unknown) => { logger.error(c, m, d); });
+ipcMain.handle('log-get-path', async () => logger.getLogFilePath());
+ipcMain.handle('log-open-directory', async () => { const p = logger.getLogDirectory(); await shell.openPath(p); });
+ipcMain.handle('log-set-directory', async () => {
+  const res = await dialog.showOpenDialog({ properties: ['openDirectory','createDirectory'] });
+  if (!res.canceled && res.filePaths?.[0]) await logger.setLogDirectory(res.filePaths[0]);
 });
-
-ipcMain.handle('log-info', async (event, category: string, message: string, data?: any) => {
-  logger.info(category, message, data);
-});
-
-ipcMain.handle('log-warn', async (event, category: string, message: string, data?: any) => {
-  logger.warn(category, message, data);
-});
-
-ipcMain.handle('log-error', async (event, category: string, message: string, data?: any) => {
-  logger.error(category, message, data);
-});
-
-ipcMain.handle('log-get-path', async () => {
-  return logger.getLogFilePath();
-});
-
-ipcMain.handle('log-open-directory', async () => {
-  const logDir = logger.getLogDirectory();
-  await shell.openPath(logDir);
-});
+ipcMain.handle('log-get-level', async () => logger.getLogLevel());
+ipcMain.handle('log-set-level', async (_e, level: 'DEBUG'|'INFO'|'WARN'|'ERROR') => { await logger.setLogLevel(level as any); });
