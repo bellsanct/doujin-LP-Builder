@@ -218,6 +218,13 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
   const compiled = Handlebars.compile(template.template);
   const renderedHtml = compiled(config);
 
+  const toAssetEntryPath = (name: string): string => {
+    const sanitized = name.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
+    const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
+    const normalized = parts.join('/');
+    return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
+  };
+
   const zip = new AdmZip();
   zip.addFile('index.html', Buffer.from(renderedHtml, 'utf-8'));
   zip.addFile('style.css', Buffer.from(template.styles || '', 'utf-8'));
@@ -229,7 +236,8 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
       if (!a?.filename) continue;
       try {
         const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
-        zip.addFile(a.filename, dataBuffer);
+        const entryPath = toAssetEntryPath(a.filename);
+        zip.addFile(entryPath, dataBuffer);
       } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
     }
   } else if (assets && typeof assets === 'object') {
@@ -238,7 +246,8 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
       if (!data) continue;
       try {
         const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
-        zip.addFile(k, dataBuffer);
+        const entryPath = toAssetEntryPath(k);
+        zip.addFile(entryPath, dataBuffer);
       } catch (e) { console.error('Failed to add asset to zip:', k, e); }
     }
   }
