@@ -40,7 +40,7 @@ temp/
 .*.swo
 
 # Claude
-.claude
+.claude/
 
 # Codex
-.codex
+.codex/
