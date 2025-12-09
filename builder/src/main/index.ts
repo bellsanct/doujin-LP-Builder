@@ -144,7 +144,7 @@ ipcMain.handle('open-template-file', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
-      { name: 'Template Archive', extensions: ['zip','dlpt'] },
+      { name: 'Template Archive', extensions: ['dlpt'] },
       { name: 'All Files', extensions: ['*'] }
     ],
     title: t.dialogs.openTemplateTitle

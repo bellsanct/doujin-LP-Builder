@@ -1,12 +1,12 @@
 /**
- * テンプレートディレクトリをZIPファイルにパッケージ化するスクリプト
+ * テンプレートディレクトリをDLPT (zip) ファイルにパッケージ化するスクリプト
  *
  * Usage:
  *   node build-template.js <template-directory> [output-file]
  *
  * Example:
  *   node build-template.js ./templates/music-album-v1
- *   node build-template.js ./templates/music-album-v1 ./output/music-album-v1.zip
+ *   node build-template.js ./templates/music-album-v1 ./output/music-album-v1.dlpt
  */
 
 const AdmZip = require('adm-zip');
@@ -109,7 +109,7 @@ function packageTemplate(templateDir, outputFile) {
   console.log(`   File: ${outputFile}`);
   console.log(`   Size: ${fileSizeKB} KB`);
   console.log('');
-  console.log('💡 You can now distribute this ZIP file.');
+  console.log('💡 You can now distribute this DLPT file.');
   console.log('   Users can open it with Doujin LP Builder.');
 }
 
@@ -121,7 +121,7 @@ if (args.length === 0) {
   console.log('');
   console.log('Example:');
   console.log('  node build-template.js ./templates/music-album-v1');
-  console.log('  node build-template.js ./templates/music-album-v1 ./output/music-album-v1.zip');
+  console.log('  node build-template.js ./templates/music-album-v1 ./output/music-album-v1.dlpt');
   process.exit(0);
 }
 
@@ -129,7 +129,7 @@ const templateDir = path.resolve(args[0]);
 const templateName = path.basename(templateDir);
 const outputFile = args[1]
   ? path.resolve(args[1])
-  : path.join(templateDir, '..', `${templateName}.zip`);
+  : path.join(templateDir, '..', `${templateName}.dlpt`);
 
 try {
   packageTemplate(templateDir, outputFile);

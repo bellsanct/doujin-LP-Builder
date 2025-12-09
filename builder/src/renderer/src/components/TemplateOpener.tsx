@@ -99,7 +99,7 @@ const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onT
               <PaintBrush24Regular /> Criclify : 同人サークルのためのホームページビルダー
             </span>
           </Title1>
-          <p className="opener-subtitle">テンプレートファイル (.zip) を開いて、LPを作成しましょう</p>
+          <p className="opener-subtitle">テンプレートファイル (.dlpt) を開いて、LPを作成しましょう</p>
         </div>
 
         {error && (
@@ -126,12 +126,12 @@ const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onT
               'テンプレートファイルを開く'
             )}
           </Button>
-          <p className="file-hint">.zip / .dlpt ファイルを選択してください</p>
+          <p className="file-hint">.dlpt ファイルを選択してください</p>
           {/* Hidden file input for web mode */}
           <input
             ref={fileInputRef}
             type="file"
-            accept=".zip,.dlpt"
+            accept=".dlpt"
             style={{ display: 'none' }}
             onChange={async (e) => {
               const f = e.target.files?.[0];

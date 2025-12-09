@@ -89,7 +89,7 @@ export const en = {
     title: 'Select Template',
     description: 'Choose a template to get started',
     openFile: 'Open from File',
-    openFileDescription: 'Select .zip or .dlpt file',
+    openFileDescription: 'Select .dlpt file',
     recentTemplates: 'Recent Templates',
     browse: 'Browse',
   },

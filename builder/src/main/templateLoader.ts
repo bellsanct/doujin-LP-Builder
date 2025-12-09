@@ -52,8 +52,8 @@ export function validateTemplateFile(filePath: string): { valid: boolean; errors
   const errors: string[] = [];
   try {
     const lower = filePath.toLowerCase();
-    if (!(lower.endsWith('.zip') || lower.endsWith('.dlpt'))) {
-      errors.push('File extension must be .zip or .dlpt');
+    if (!lower.endsWith('.dlpt')) {
+      errors.push('File extension must be .dlpt');
     }
     const zip = new AdmZip(filePath);
     const names = zip.getEntries().map(e => e.entryName);
@@ -65,6 +65,6 @@ export function validateTemplateFile(filePath: string): { valid: boolean; errors
     if (!hasAny(['index.html', 'template.html'])) errors.push('Required file missing: index.html or template.html');
     return { valid: errors.length === 0, errors };
   } catch (e) {
-    return { valid: false, errors: ['Invalid ZIP file'] };
+    return { valid: false, errors: ['Invalid DLPT file'] };
   }
 }
