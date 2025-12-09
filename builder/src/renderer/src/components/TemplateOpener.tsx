@@ -22,7 +22,7 @@ const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onT
     loadRecentFiles();
   }, []);
 
-  // 外部から呼び出せるメソッドを公開
+  // 外部からファイルオープンをトリガーするための公開メソッド
   useImperativeHandle(ref, () => ({
     triggerOpenTemplate: handleOpenFile,
   }));
@@ -34,7 +34,7 @@ const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onT
         return;
       }
       const recent = await window.electronAPI.getRecentTemplates();
-      setRecentFiles(recent);
+      setRecentFiles(recent.slice(0, 5));
     } catch (error) {
       console.error('Failed to load recent files:', error);
     }
@@ -53,14 +53,34 @@ const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onT
     try {
       const template = await window.electronAPI.openTemplateFile();
       if (template) {
-        console.log('✅ Template loaded:', template.manifest.name);
+        console.log('Template loaded:', template.manifest.name);
         onTemplateOpen(template);
-        // 最近使ったファイルを再読み込み
         await loadRecentFiles();
       }
     } catch (error) {
       console.error('Failed to open template:', error);
       setError(error instanceof Error ? error.message : 'テンプレートファイルの読み込みに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenRecentFile = async (filePath: string) => {
+    if (!window.electronAPI?.openTemplateFromPath) {
+      setError('最近使ったファイルを開けませんでした');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const template = await window.electronAPI.openTemplateFromPath(filePath);
+      if (template) {
+        onTemplateOpen(template);
+        await loadRecentFiles();
+      }
+    } catch (error) {
+      console.error('Failed to open recent template:', error);
+      setError(error instanceof Error ? error.message : '最近使ったファイルの読み込みに失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +110,14 @@ const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onT
         )}
 
         <div className="open-file-section">
-          <Button appearance="primary" size="large" icon={<FolderOpen24Regular />} onClick={handleOpenFile} disabled={isLoading} style={{ width: '100%', height: 48 }}>
+          <Button
+            appearance="primary"
+            size="large"
+            icon={<FolderOpen24Regular />}
+            onClick={handleOpenFile}
+            disabled={isLoading}
+            style={{ width: '100%', height: 48 }}
+          >
             {isLoading ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <Spinner size="tiny" /> 読み込み中...
@@ -133,17 +160,7 @@ const TemplateOpener = forwardRef<TemplateOpenerRef, TemplateOpenerProps>(({ onT
                 <li
                   key={index}
                   className="recent-file-item"
-                  onClick={async () => {
-                    setIsLoading(true);
-                    setError(null);
-                    try {
-                      // TODO: 特定のファイルパスからテンプレートを読み込む機能を実装
-                      // 現在は再度ダイアログを開く
-                      await handleOpenFile();
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
+                  onClick={() => handleOpenRecentFile(file)}
                 >
                   <span className="file-icon" aria-hidden>
                     <Document24Regular />
