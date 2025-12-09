@@ -12,12 +12,12 @@
 
 **【ここを編集してください】**
 
-- **テーマ ID**: `miyabi`（英小文字とハイフン）
-- **テーマ名**: miyabi
-- **トーン/スタイル**: 和を基調とした日本スタイル
-- **配色**: 和を連想させるカラーを採用
+- **テーマ ID**: 作成したテーマの世界観に沿うように決めてほしい（英小文字とハイフン）
+- **テーマ名**: 作成したテーマの世界観に沿うように決めてほしい
+- **トーン/スタイル**: 和や洋といったスタイルではなく、どんなジャンルにも適合するシンプルなスタイル
+- **配色**: 彩度は高くなく、落ち着いた配色
 - **フォント**: 選定を任せます、世界観に合うように
-- **特徴**: 和風テクノコンピ等での採用を見越したテンプレート。メインタイトルは縦書きにしたい。
+- **特徴**: どんな楽曲ジャンルの新譜にも使える、万能選手なモバイルファーストテンプレート。
 
 ---
 
@@ -540,39 +540,71 @@
 
 #### リリース情報（ジャケット画像の扱い）
 
+**推奨HTML構造**: releaseセクションは独立したコンテナ構造にすること
+
 ```html
-<section id="release" class="section">
-  <div class="release-layout">
-    <!-- ジャケット画像エリア -->
-    <div class="jacket-area">
-      {{#if jacketImage}}
-      <img src="{{jacketImage}}" alt="{{albumTitle}}" class="jacket-img">
-      {{else}}
-      <div class="jacket-placeholder">No Image</div>
-      {{/if}}
-    </div>
+<!-- ❌ 非推奨: mainコンテナ内にreleaseセクションを配置 -->
+<main class="container">
+  <section id="release" class="section">
+    <div class="release-layout">...</div>
+  </section>
+</main>
 
-    <!-- アルバム情報エリア -->
-    <div class="info-area">
-      <h2 class="album-title">{{albumTitle}}</h2>
-      {{#if artistName}}<p class="artist-name">{{artistName}}</p>{{/if}}
+<!-- ✅ 推奨: releaseセクションを独立させ、独自のcontainerを持たせる -->
+</main>
 
-      {{#if releaseInfo}}
-      <div class="release-meta">
-        {{#each releaseInfo}}
-        <div class="meta-item">
-          <span class="meta-label">{{label}}</span>
-          <span class="meta-value">{{value}}</span>
+<section id="release" class="section release-section">
+  <div class="container">
+    <div class="release-layout">
+      <!-- ジャケット画像エリア -->
+      <div class="jacket-area">
+        {{#if jacketImage}}
+        <img src="{{jacketImage}}" alt="{{albumTitle}}" class="jacket-img">
+        {{else}}
+        <div class="jacket-placeholder">
+          <span>{{albumTitle}}</span>
         </div>
-        {{/each}}
+        {{/if}}
       </div>
-      {{/if}}
+
+      <!-- アルバム情報エリア -->
+      <div class="info-area">
+        <div class="info-header">
+          <h2 class="album-title">{{albumTitle}}</h2>
+          {{#if artistName}}<p class="artist-name">{{artistName}}</p>{{/if}}
+        </div>
+
+        {{#if releaseInfo}}
+        <dl class="spec-list">
+          {{#each releaseInfo}}
+          <div class="spec-row">
+            <dt>{{label}}</dt>
+            <dd>{{value}}</dd>
+          </div>
+          {{/each}}
+        </dl>
+        {{/if}}
+
+        {{#if shopLinks}}
+        <div class="shop-buttons">
+          {{#each shopLinks}}
+          <a href="{{url}}" class="btn-shop" target="_blank">{{label}}</a>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
     </div>
   </div>
 </section>
+
+<main class="container">
 ```
 
-**重要**: `jacketImage` は任意フィールドのため、必ず `{{#if jacketImage}}` で条件分岐すること
+**重要事項**:
+
+1. `jacketImage` は任意フィールドのため、必ず `{{#if jacketImage}}` で条件分岐すること
+2. releaseセクションは `</main>` の外に独立配置し、独自の `.container` を持たせること
+3. `jacket-frame` などの余計なラッパーは不要（直接 `jacket-area` に画像を配置）
 
 ---
 
@@ -622,16 +654,130 @@
 }
 ```
 
-#### モバイル対応メディアクエリ（必須）
+#### リリースセクションのレスポンシブレイアウト（必須）
 
 ```css
-/* Mobile-specific background position */
-@media (max-width: 768px) {
-  .hero {
-    background-position: var(--hero-pos-x-mobile, var(--hero-pos-x, 50%)) var(--hero-pos-y-mobile, var(--hero-pos-y, 50%)) !important;
+/* Release Section Base Layout */
+.release-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.jacket-area {
+  flex: 1;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.jacket-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.jacket-placeholder {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background-color: #f4f4f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  border: 1px solid #eee;
+}
+
+.info-area {
+  flex: 1;
+  min-width: 300px;
+}
+```
+
+**重要なポイント**:
+
+1. **`flex-wrap: wrap`** - 画面サイズに応じて自動的に折り返し
+2. **`align-items: center`** - 垂直中央揃え（タブレット/デスクトップ時）
+3. **`justify-content: center`** - 水平中央揃え（常に中央配置）
+4. **`min-width` と `max-width`** - 適切なサイズ範囲を確保
+5. **`aspect-ratio: 1/1`** - プレースホルダーを正方形に（モダンCSS）
+
+#### タブレット対応（推奨）
+
+```css
+/* Tablet: ジャケットサイズを制限 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .jacket-area {
+    max-width: 380px;
+  }
+
+  .album-title {
+    font-size: 2rem;
   }
 }
 ```
+
+**タブレット対応の理由**:
+
+- デフォルトの `max-width: 500px` ではタブレットで大きすぎる
+- `380px` 程度に制限することでバランスの良い表示に
+
+#### モバイル対応メディアクエリ（必須）
+
+```css
+/* Mobile: リリースセクションを縦並びに */
+@media (max-width: 768px) {
+  /* Hero背景位置（必須） */
+  .hero {
+    background-position: var(--hero-pos-x-mobile, var(--hero-pos-x, 50%)) var(--hero-pos-y-mobile, var(--hero-pos-y, 50%)) !important;
+  }
+
+  /* Release Section */
+  .release-layout {
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .jacket-area,
+  .info-area {
+    max-width: 100%;
+  }
+
+  .info-header {
+    text-align: center;
+  }
+
+  /* スペックリストをグリッドレイアウトに */
+  .spec-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 0.5rem;
+    text-align: left;
+    padding: 0.9rem 0;
+  }
+
+  /* ショップボタンを縦並びに */
+  .shop-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .btn-shop {
+    width: 100%;
+    text-align: center;
+  }
+}
+```
+
+**モバイル対応の重要ポイント**:
+
+1. **`flex-direction: column`** - シンプルに縦並びに変更
+2. **`max-width: 100%`** - 幅制限を解除
+3. **グリッドレイアウト** - スペックリストは `display: grid` で整列
+4. **ボタンの縦並び** - ショップボタンは全幅で縦に配置
 
 ---
 
@@ -671,6 +817,10 @@ Filename: style.css
 - [ ] style.css に上記 CSS 変数を使った background-position とモバイル用 @media クエリ
 - [ ] **改行処理の統一**: aboutText は `{{aboutText}}` で記述（トリプルブレース禁止）
 - [ ] **改行処理の統一**: style.css で `.about-text { white-space: pre-wrap; }` を定義
+- [ ] **releaseセクション構造**: `</main>` の外に独立配置し、独自の `.container` を持たせる
+- [ ] **レスポンシブレイアウト**: `flex-wrap: wrap`, `align-items: center`, `justify-content: center` を使用
+- [ ] **タブレット対応**: jacket-area の max-width を 380px 程度に制限
+- [ ] **モバイル対応**: flex-direction: column で縦並び、スペックリストはグリッドレイアウト
 
 ### JSON 品質
 
