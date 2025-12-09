@@ -144,16 +144,16 @@ ipcMain.handle('open-template-file', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
-      { name: 'Template Archive', extensions: ['zip','dlpt'] },
+      { name: 'Template Archive', extensions: ['dlpt'] },
       { name: 'All Files', extensions: ['*'] }
     ],
     title: t.dialogs.openTemplateTitle
   });
   if (result.canceled || result.filePaths.length === 0) return null;
   const filePath = result.filePaths[0];
-  const validation = validateTemplateFile(filePath);
+  const validation = validateTemplateFile(filePath, currentLanguage);
   if (!validation.valid) {
-    throw new Error(`Invalid template file:\n${validation.errors.join('\n')}`);
+    throw new Error(`${t.dialogs.invalidTemplate}:\n${validation.errors.join('\n')}`);
   }
   const template = await loadTemplate(filePath);
   await addRecentTemplate(filePath);
@@ -174,9 +174,9 @@ ipcMain.handle('open-template-from-path', async (_event, filePath: string) => {
   } catch {
     throw new Error(`ファイルが見つかりません: ${normalizedPath}`);
   }
-  const validation = validateTemplateFile(normalizedPath);
+  const validation = validateTemplateFile(normalizedPath, currentLanguage);
   if (!validation.valid) {
-    throw new Error(`Invalid template file:\n${validation.errors.join('\n')}`);
+    throw new Error(`${t.dialogs.invalidTemplate}:\n${validation.errors.join('\n')}`);
   }
   const template = await loadTemplate(normalizedPath);
   await addRecentTemplate(normalizedPath);

@@ -89,7 +89,7 @@ export const ja = {
     title: 'テンプレートを選択',
     description: '使用するテンプレートを選択してください',
     openFile: 'ファイルから開く',
-    openFileDescription: '.zip または .dlpt ファイルを選択',
+    openFileDescription: '.dlpt ファイルを選択',
     recentTemplates: '最近使用したテンプレート',
     browse: '参照',
   },

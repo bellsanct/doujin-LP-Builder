@@ -32,6 +32,7 @@ export interface MainTranslations {
     openTemplateTitle: string;
     aboutMessage: string;
     aboutDetail: string;
+    invalidTemplate: string;
   };
 }
 
@@ -62,6 +63,7 @@ const ja: MainTranslations = {
     openTemplateTitle: 'テンプレートファイルを開く',
     aboutMessage: 'Criclify : 同人サークルのためのホームページビルダー',
     aboutDetail: 'バージョン: {version}\nElectron: {electron}\nChrome: {chrome}\nNode.js: {node}',
+    invalidTemplate: 'テンプレートファイルが不正です',
   },
 };
 
@@ -92,6 +94,7 @@ const en: MainTranslations = {
     openTemplateTitle: 'Open Template File',
     aboutMessage: 'Criclify : Homepage Builder for Doujin Circles',
     aboutDetail: 'Version: {version}\nElectron: {electron}\nChrome: {chrome}\nNode.js: {node}',
+    invalidTemplate: 'Invalid template file',
   },
 };
 

@@ -1,6 +1,7 @@
-﻿import AdmZip from 'adm-zip';
+import AdmZip from 'adm-zip';
 import * as path from 'path';
 import type { TemplateArchive } from '../types/template';
+import type { Language } from './i18n';
 
 export async function loadTemplate(filePath: string): Promise<TemplateArchive> {
   const zip = new AdmZip(filePath);
@@ -48,23 +49,25 @@ export async function loadTemplate(filePath: string): Promise<TemplateArchive> {
   return result as TemplateArchive;
 }
 
-export function validateTemplateFile(filePath: string): { valid: boolean; errors: string[] } {
+export function validateTemplateFile(filePath: string, language: Language = 'ja'): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
+  const isJa = language === 'ja';
+  const missing = (desc: string) => isJa ? `必須ファイルが見つかりません: ${desc}` : `Required file missing: ${desc}`;
   try {
     const lower = filePath.toLowerCase();
-    if (!(lower.endsWith('.zip') || lower.endsWith('.dlpt'))) {
-      errors.push('File extension must be .zip or .dlpt');
+    if (!lower.endsWith('.dlpt')) {
+      errors.push(isJa ? '.dlpt拡張子のテンプレートを選択してください' : 'File extension must be .dlpt');
     }
     const zip = new AdmZip(filePath);
     const names = zip.getEntries().map(e => e.entryName);
     const hasAny = (cands: string[]) => names.some(n => cands.some(c => n.endsWith('/' + c) || n === c));
-    if (!hasAny(['manifest.json', 'template.json'])) errors.push('Required file missing: manifest.json or template.json');
-    if (!hasAny(['schema.json', 'config.schema.json'])) errors.push('Required file missing: schema.json or config.schema.json');
-    if (!hasAny(['config.default.json'])) errors.push('Required file missing: config.default.json');
-    if (!hasAny(['style.css'])) errors.push('Required file missing: style.css');
-    if (!hasAny(['index.html', 'template.html'])) errors.push('Required file missing: index.html or template.html');
+    if (!hasAny(['manifest.json', 'template.json'])) errors.push(missing('manifest.json or template.json'));
+    if (!hasAny(['schema.json', 'config.schema.json'])) errors.push(missing('schema.json or config.schema.json'));
+    if (!hasAny(['config.default.json'])) errors.push(missing('config.default.json'));
+    if (!hasAny(['style.css'])) errors.push(missing('style.css'));
+    if (!hasAny(['index.html', 'template.html'])) errors.push(missing('index.html or template.html'));
     return { valid: errors.length === 0, errors };
   } catch (e) {
-    return { valid: false, errors: ['Invalid ZIP file'] };
+    return { valid: false, errors: [isJa ? 'テンプレートファイルを読み込めませんでした' : 'Invalid DLPT file'] };
   }
 }
