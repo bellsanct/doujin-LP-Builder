@@ -11,8 +11,6 @@ files:
   - package.json
   - "!**/*.ts"
   - "!src/**/*"
-  - "!node_modules/**/*"
-  - "!builder/node_modules/**/*"
 
 win:
   icon: build/icon.png
