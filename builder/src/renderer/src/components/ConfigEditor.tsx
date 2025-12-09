@@ -431,6 +431,16 @@ const ConfigEditor = forwardRef<ConfigEditorRef, ConfigEditorProps>(({ schema, c
                 onChange={(_, data) => handleChangeDebounced([field.id], data.value, 100)}
               />
               <span className="slider-value">{value ?? field.min ?? 0}{field.unit || '%'}</span>
+              {field.default !== undefined && (
+                <button
+                  type="button"
+                  className="slider-reset"
+                  onClick={() => handleChange([field.id], field.default)}
+                  title="初期値に戻す"
+                >
+                  初期値
+                </button>
+              )}
             </div>
           );
         } else {
@@ -507,6 +517,16 @@ const ConfigEditor = forwardRef<ConfigEditorRef, ConfigEditorProps>(({ schema, c
               onChange={(_, data) => handleChangeDebounced([field.id], data.value, 100)}
             />
             <span className="slider-value">{value ?? field.min ?? 0}{field.unit || ''}</span>
+            {field.default !== undefined && (
+              <button
+                type="button"
+                className="slider-reset"
+                onClick={() => handleChange([field.id], field.default)}
+                title="初期値に戻す"
+              >
+                初期値
+              </button>
+            )}
           </div>
         );
         break;
