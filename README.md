@@ -1,4 +1,4 @@
-# Doujin LP System
+# Criclify (旧: Doujin LP System)
 
 同人作品向けランディングページ(LP)制作システム
 
@@ -6,8 +6,38 @@
 
 ```
 doujin-lp-system/
-├── builder/              # LP Builder (デスクトップアプリ)
-│   └── (開発中)
+├── builder/              # LP Builder (Electronアプリ)
+│   ├── src/
+│   │   ├── main/        # Electronメインプロセス
+│   │   │   ├── index.ts
+│   │   │   ├── templateLoader.ts
+│   │   │   ├── logger.ts
+│   │   │   └── i18n.ts
+│   │   ├── renderer/    # Reactレンダラープロセス
+│   │   │   └── src/
+│   │   │       ├── App.tsx
+│   │   │       ├── components/
+│   │   │       │   ├── TemplateSelector.tsx
+│   │   │       │   ├── TemplateOpener.tsx
+│   │   │       │   ├── ConfigEditor.tsx
+│   │   │       │   ├── PreviewPane.tsx
+│   │   │       │   └── I18nProvider.tsx
+│   │   │       ├── utils/
+│   │   │       │   ├── webTemplateLoader.ts
+│   │   │       │   └── templateSaver.ts
+│   │   │       └── i18n/
+│   │   │           ├── index.ts
+│   │   │           ├── ja.ts
+│   │   │           └── en.ts
+│   │   ├── preload/     # Preloadスクリプト
+│   │   │   └── index.ts
+│   │   └── types/       # TypeScript型定義
+│   │       ├── template.ts
+│   │       ├── schema.ts
+│   │       └── ipc.ts
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
 │
 ├── templates/            # LPテンプレート集
 │   └── music-album-v1/  # 音楽アルバム用テンプレート v1
@@ -34,13 +64,21 @@ doujin-lp-system/
   - [x] style.css (スタイルシート)
   - [x] script.js (JavaScript)
   - [x] README.md (ドキュメント)
+- [x] LP Builder v1.0 基本機能
+  - [x] Electron + React + TypeScript セットアップ
+  - [x] テンプレート選択UI (TemplateSelector)
+  - [x] 既存テンプレート読み込み (TemplateOpener)
+  - [x] 設定編集UI (ConfigEditor)
+  - [x] リアルタイムプレビュー (PreviewPane)
+  - [x] 多言語対応 (日本語/英語)
+  - [x] ZIPビルド機能 (templateSaver)
+  - [x] Fluent UI 2 デザインシステム
 
 ### 🚧 進行中
-- [ ] LP Builder (Electronアプリ)
-  - [ ] プロジェクト初期化
-  - [ ] UI実装
-  - [ ] テンプレートエンジン
-  - [ ] ビルド機能
+- [ ] ビルド機能の改善
+  - [x] 基本的なZIPエクスポート
+  - [ ] アセット最適化
+  - [ ] エラーハンドリング強化
 
 ### 📋 予定
 - [ ] 追加テンプレート
@@ -48,40 +86,56 @@ doujin-lp-system/
   - [ ] Game Template (ゲーム用)
   - [ ] Event Template (イベント用)
 - [ ] ビルダー機能拡張
+  - [ ] テンプレートプラグインシステム
+  - [ ] カスタムウィジェット追加
+  - [ ] プロジェクト保存/読み込み
 - [ ] ドキュメント整備
 - [ ] サンプルサイト公開
 
-## 使い方 (予定)
+## 使い方
 
-### 1. LP Builderをインストール
+### 開発環境でのセットアップ
 
 ```bash
-# Windows
-./builder-win-x64.exe
+# リポジトリをクローン
+git clone https://github.com/bellsanct/doujin-LP-Builder.git
+cd doujin-LP-Builder
 
-# macOS
-./builder-mac.app
+# ビルダーの依存関係をインストール
+cd builder
+npm install
+
+# 開発サーバー起動
+npm run dev
 ```
 
-### 2. テンプレートを選択
+### LP Builderの使い方
+
+#### 1. テンプレートを選択
 
 1. LP Builderを起動
-2. 「新規プロジェクト」をクリック
-3. テンプレートを選択 (例: Music Album v1)
+2. 「新規プロジェクト」タブでテンプレートを選択 (例: Music Album v1)
+   - または「テンプレート読み込み」タブで既存のZIPファイルを読み込み
 
-### 3. 設定を編集
+#### 2. 設定を編集
+
+Schema-Driven UIにより、テンプレートの設定スキーマに基づいて自動生成されたフォームで編集:
 
 - 基本設定 (タイトル、説明文、URL等)
 - デザイン (色、背景画像等)
 - コンテンツ (トラックリスト、スタッフ等)
 - エフェクト (3D傾斜等)
 
-### 4. ビルド・公開
+#### 3. リアルタイムプレビュー
 
-1. プレビューで確認
-2. 「ビルド」をクリック
-3. `output/` フォルダに静的ファイルが生成
-4. サーバーにアップロード
+右側のプレビューペインで変更内容をリアルタイムに確認できます。
+
+#### 4. ビルド・公開
+
+1. プレビューで最終確認
+2. 「ビルド」ボタンをクリック
+3. 保存先を選択してZIPファイルを生成
+4. ZIPを解凍してWebサーバーにアップロード
 
 ## テンプレート開発
 
@@ -182,17 +236,44 @@ Static Site Output
 
 ### 技術スタック
 
-- **LP Builder**: Electron + React + TypeScript
-- **Templates**: HTML + CSS + JavaScript (Vanilla)
-- **Schema**: JSON Schema Draft-07
+**LP Builder**:
+- **フレームワーク**: Electron 28 + React 18 + TypeScript 5
+- **ビルドツール**: Vite 5
+- **UIライブラリ**: Fluent UI 2 (@fluentui/react-components)
+- **状態管理**: Zustand 4
+- **テンプレートエンジン**: Handlebars 4
+- **バリデーション**: AJV 8 (JSON Schema validator)
+- **ZIPライブラリ**: JSZip, ADM-ZIP
 
-### セットアップ
+**Templates**:
+- HTML + CSS + JavaScript (Vanilla)
+- Handlebars記法
+
+**Schema**:
+- JSON Schema Draft-07
+
+### 開発コマンド
 
 ```bash
-# Builder開発環境セットアップ (予定)
 cd builder/
+
+# 依存関係インストール
 npm install
+
+# 開発サーバー起動（HMR有効）
 npm run dev
+
+# レンダラーのみ開発
+npm run dev:renderer
+
+# メインプロセスのみビルド＆起動
+npm run dev:main
+
+# プロダクションビルド
+npm run build
+
+# Electronアプリをパッケージング
+npm run package
 ```
 
 ## コントリビューション
@@ -207,20 +288,35 @@ npm run dev
 
 ## ロードマップ
 
-### Phase 1: MVP (現在)
+### Phase 1: MVP ✅ (完了)
 - [x] 基本構造設計
 - [x] Music Album Template v1
-- [ ] LP Builder v1.0
+- [x] LP Builder v1.0 基本機能
+  - [x] テンプレート選択・読み込み
+  - [x] Schema-Driven UI
+  - [x] リアルタイムプレビュー
+  - [x] ZIPビルド機能
+  - [x] 多言語対応 (日本語/英語)
 
-### Phase 2: 機能拡張
+### Phase 2: 機能拡張 🚧 (進行中)
+- [ ] ビルド機能改善
+  - [x] 基本的なZIPエクスポート
+  - [ ] アセット最適化
+  - [ ] エラーハンドリング強化
 - [ ] 追加テンプレート (3種類)
-- [ ] リアルタイムプレビュー強化
-- [ ] エクスポート形式追加
+  - [ ] Doujinshi Template
+  - [ ] Game Template
+  - [ ] Event Template
+- [ ] ビルダー機能
+  - [ ] プロジェクト保存/読み込み
+  - [ ] テンプレートプラグインシステム
+  - [ ] カスタムウィジェット
 
-### Phase 3: エコシステム
+### Phase 3: エコシステム 📋 (予定)
 - [ ] テンプレートマーケットプレイス
 - [ ] コミュニティギャラリー
-- [ ] プラグインシステム
+- [ ] プラグインシステム拡張
+- [ ] クラウド連携機能
 
 ## サポート
 
@@ -234,6 +330,6 @@ Doujin LP Project Team
 
 ---
 
-**Status**: 🚧 Prototype Development
-**Version**: 0.1.0
-**Last Updated**: 2024-12-01
+**Status**: 🚀 MVP Complete / Phase 2 In Progress
+**Version**: 1.0.0
+**Last Updated**: 2025-12-09
