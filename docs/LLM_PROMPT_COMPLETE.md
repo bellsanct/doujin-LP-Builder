@@ -116,9 +116,10 @@
   "secondaryColor": "#4a90e2",
   "accentColor": "#ff9a9e",
   "heroImage": "",
-  "heroPositionX": "center",
-  "heroPositionY": "center",
-  "heroPositionY_mobile": "top",
+  "heroPositionX": 50,
+  "heroPositionY": 50,
+  "heroPositionX_mobile": 50,
+  "heroPositionY_mobile": 25,
   "overlayColor": "#ffffff",
   "overlayOpacity": 20,
   "heroBadge": "2025 Spring Release",
@@ -184,7 +185,8 @@
 
 **必須フィールド**:
 
-- `heroPositionY_mobile: "top"` - モバイル専用縦位置（必須）
+- `heroPositionX` / `heroPositionY`: 0〜100（%）で位置指定。左/上=0, 右/下=100
+- `heroPositionX_mobile` / `heroPositionY_mobile`: モバイル専用の上書き値。未指定なら PC 値を使用
 - `overlayColor` と `overlayOpacity` - オーバーレイ設定
 - `releaseInfo` - 配列形式の頒布情報（price/releaseDate の代わり）
 - `credits` - クレジット情報（role, name, link1Label ～ link3Label/Url）
@@ -230,37 +232,45 @@
     },
     {
       "id": "heroPositionX",
-      "type": "select",
-      "label": "背景位置（横）",
-      "options": [
-        { "value": "left", "label": "左寄せ" },
-        { "value": "center", "label": "中央" },
-        { "value": "right", "label": "右寄せ" }
-      ],
-      "default": "center"
+      "type": "slider",
+      "label": "背景位置（横: 0=左 / 100=右）",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 50
     },
     {
       "id": "heroPositionY",
-      "type": "select",
-      "label": "背景位置（縦）",
-      "options": [
-        { "value": "top", "label": "上寄せ" },
-        { "value": "center", "label": "中央" },
-        { "value": "bottom", "label": "下寄せ" }
-      ],
-      "default": "center"
+      "type": "slider",
+      "label": "背景位置（縦: 0=上 / 100=下）",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 50
+    },
+    {
+      "id": "heroPositionX_mobile",
+      "type": "slider",
+      "label": "背景位置（横・モバイル）",
+      "description": "未指定ならPC値を使用。横長画像なら中央〜やや左寄せ推奨",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 50
     },
     {
       "id": "heroPositionY_mobile",
-      "type": "select",
+      "type": "slider",
       "label": "背景位置（縦・モバイル）",
-      "description": "スマホでの縦位置。横長画像は上寄せ推奨",
-      "options": [
-        { "value": "top", "label": "上寄せ" },
-        { "value": "center", "label": "中央" },
-        { "value": "bottom", "label": "下寄せ" }
-      ],
-      "default": "top"
+      "description": "未指定ならPC値を使用。横長画像は上寄せ気味を推奨",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 25
     },
     {
       "id": "overlayColor",
@@ -465,7 +475,10 @@
     --accent-color: {{accentColor}};
     --overlay-color: {{overlayColor}};
     --overlay-opacity: calc({{overlayOpacity}} / 100);
-    --hero-position-y-mobile: {{heroPositionY_mobile}};
+    --hero-pos-x: {{heroPositionX}}%;
+    --hero-pos-y: {{heroPositionY}}%;
+    --hero-pos-x-mobile: {{#if heroPositionX_mobile}}{{heroPositionX_mobile}}{{else}}{{heroPositionX}}{{/if}}%;
+    --hero-pos-y-mobile: {{#if heroPositionY_mobile}}{{heroPositionY_mobile}}{{else}}{{heroPositionY}}{{/if}}%;
   }
 </style>
 ```
@@ -473,7 +486,7 @@
 #### ヒーローセクション（背景画像設定）
 
 ```html
-<header class="hero" {{#if heroImage}}style="background-image: url('{{heroImage}}'); background-position: {{heroPositionX}} {{heroPositionY}};"{{/if}}>
+<header class="hero" {{#if heroImage}}style="background-image: url('{{heroImage}}');"{{/if}}>
   <div class="hero-overlay"></div>
   <div class="hero-content fade-in-up">
     {{#if heroBadge}}
@@ -588,7 +601,7 @@
   height: 90vh;
   min-height: 600px;
   background-size: cover;
-  background-position: center;
+  background-position: var(--hero-pos-x, 50%) var(--hero-pos-y, 50%);
   background-color: #ddd;
   display: flex;
   align-items: center;
@@ -615,7 +628,7 @@
 /* Mobile-specific background position */
 @media (max-width: 768px) {
   .hero {
-    background-position: center var(--hero-position-y-mobile) !important;
+    background-position: var(--hero-pos-x-mobile, var(--hero-pos-x, 50%)) var(--hero-pos-y-mobile, var(--hero-pos-y, 50%)) !important;
   }
 }
 ```
@@ -652,10 +665,10 @@ Filename: style.css
 ### 必須実装
 
 - [ ] manifest.json に正しい id, name, description
-- [ ] schema.json に heroPositionY_mobile フィールド
-- [ ] config.default.json に heroPositionY_mobile: "top"
-- [ ] index.html に --hero-position-y-mobile CSS 変数
-- [ ] style.css にモバイル用 @media クエリ
+- [ ] schema.json に heroPositionX/heroPositionY（数値0〜100）と heroPositionX_mobile/heroPositionY_mobile（モバイル上書き）フィールド
+- [ ] config.default.json に heroPositionX/heroPositionY の初期値（例: 50/50）とモバイル上書き（例: 50/25）
+- [ ] index.html に --hero-pos-x / --hero-pos-y / --hero-pos-x-mobile / --hero-pos-y-mobile の CSS 変数
+- [ ] style.css に上記 CSS 変数を使った background-position とモバイル用 @media クエリ
 - [ ] **改行処理の統一**: aboutText は `{{aboutText}}` で記述（トリプルブレース禁止）
 - [ ] **改行処理の統一**: style.css で `.about-text { white-space: pre-wrap; }` を定義
 
