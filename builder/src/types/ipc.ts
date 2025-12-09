@@ -27,6 +27,7 @@ export interface LoggerAPI {
 export interface ElectronAPI {
   openTemplateFile: () => Promise<TemplateArchive | null>;
   getRecentTemplates: () => Promise<string[]>;
+  openTemplateFromPath: (filePath: string) => Promise<TemplateArchive>;
   selectFile: (options?: {
     filters?: { name: string; extensions: string[] }[];
     properties?: ('openFile' | 'multiSelections')[];

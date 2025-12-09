@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // テンプレートファイル関連
   openTemplateFile: () => ipcRenderer.invoke('open-template-file'),
   getRecentTemplates: () => ipcRenderer.invoke('get-recent-templates'),
+  openTemplateFromPath: (filePath: string) => ipcRenderer.invoke('open-template-from-path', filePath),
   
   // ファイル操作
   selectFile: (options?: {

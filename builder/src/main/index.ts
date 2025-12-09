@@ -165,11 +165,33 @@ ipcMain.handle('open-template-file', async () => {
   return serialized as TemplateArchive;
 });
 
+ipcMain.handle('open-template-from-path', async (_event, filePath: string) => {
+  const t = getMainTranslations(currentLanguage);
+  if (!filePath) throw new Error(t.dialogs.openTemplateTitle);
+  const normalizedPath = path.normalize(filePath);
+  try {
+    await fs.access(normalizedPath);
+  } catch {
+    throw new Error(`ファイルが見つかりません: ${normalizedPath}`);
+  }
+  const validation = validateTemplateFile(normalizedPath);
+  if (!validation.valid) {
+    throw new Error(`Invalid template file:\n${validation.errors.join('\n')}`);
+  }
+  const template = await loadTemplate(normalizedPath);
+  await addRecentTemplate(normalizedPath);
+  const serialized: any = {
+    ...template,
+    assets: Array.from(template.assets.entries()).map(([filename, buffer]) => ({ filename, data: Array.from(buffer) })),
+  };
+  return serialized as TemplateArchive;
+});
+
 ipcMain.handle('get-recent-templates', async () => {
   try {
     const recentPath = path.join(app.getPath('userData'), 'recent-templates.json');
     const data = await fs.readFile(recentPath, 'utf8');
-    return JSON.parse(data);
+    return (JSON.parse(data) as string[]).slice(0, 5);
   } catch { return []; }
 });
 
