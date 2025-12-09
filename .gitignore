@@ -38,3 +38,9 @@ temp/
 *~
 .*.swp
 .*.swo
+
+# Claude
+.claude
+
+# Codex
+.codex
