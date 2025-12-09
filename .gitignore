@@ -4,7 +4,8 @@ package-lock.json
 
 # Build outputs
 dist/
-build/
+builder/dist/
+output/
 
 # IDE
 .vscode/
