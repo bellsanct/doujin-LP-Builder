@@ -240,6 +240,15 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     const compiled = Handlebars.compile(template.template);
     let renderedHtml = compiled(config);
 
+    const toAssetEntryPath = (name: string): string => {
+      const raw = String(name || '');
+      const withoutDrive = raw.replace(/^[a-zA-Z]:/, '');
+      const sanitized = withoutDrive.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
+      const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
+      const normalized = parts.length > 0 ? parts.join('/') : 'asset';
+      return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
+    };
+
     // assets の内容をハッシュ化して、data URL から逆引きできるように準備
     const assetBufferMap = new Map<string, { filename: string; buffer: Buffer }>();
     const recordAssetBuffer = (filename: string, buf: Buffer) => {
@@ -257,6 +266,27 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
       'image/svg+xml': 'svg',
       'image/webp': 'webp',
       'image/x-icon': 'ico'
+    };
+
+    const preloadExistingAssets = (assets: any) => {
+      try {
+        if (Array.isArray(assets)) {
+          for (const a of assets as { filename: string; data: number[] }[]) {
+            if (!a?.filename) continue;
+            const entryPath = toAssetEntryPath(a.filename);
+            const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
+            recordAssetBuffer(entryPath, dataBuffer);
+          }
+        } else if (assets && typeof assets === 'object') {
+          for (const k of Object.keys(assets)) {
+            const data = (assets as any)[k];
+            if (!data) continue;
+            const entryPath = toAssetEntryPath(k);
+            const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+            recordAssetBuffer(entryPath, dataBuffer);
+          }
+        }
+      } catch (e) { console.error('Failed to preload asset hashes', e); }
     };
 
     const extractedAssets: { filename: string; buffer: Buffer }[] = [];
@@ -298,16 +328,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     };
 
     // data URLs are saved under assets and written to the ZIP
-
-    const toAssetEntryPath = (name: string): string => {
-      const raw = String(name || '');
-      const withoutDrive = raw.replace(/^[a-zA-Z]:/, '');
-      const sanitized = withoutDrive.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
-      const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
-      const normalized = parts.length > 0 ? parts.join('/') : 'asset';
-      return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
-    };
-
+    preloadExistingAssets((template as any).assets);
     renderedHtml = extractDataUrls(renderedHtml, 'html');
     const stylesContent = extractDataUrls(template.styles || '', 'css');
 
