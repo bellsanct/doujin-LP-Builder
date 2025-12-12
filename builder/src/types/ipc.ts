@@ -35,6 +35,8 @@ export interface ElectronAPI {
   selectSavePath: (options?: { defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<string | null>;
   selectDirectory: () => Promise<string | null>;
   openPath: (dirPath: string) => Promise<void>;
+  encryptString: (plainText: string) => Promise<string>;
+  decryptString: (encrypted: string) => Promise<string>;
   readFile: (filePath: string) => Promise<string>;
   readFileBase64: (filePath: string) => Promise<string>;
   writeFile: (filePath: string, content: string) => Promise<boolean>;

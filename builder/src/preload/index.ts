@@ -25,6 +25,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   openPath: (dirPath: string) => ipcRenderer.invoke('open-path', dirPath),
 
+  // Secure storage
+  encryptString: (plainText: string) => ipcRenderer.invoke('encrypt-string', plainText),
+  decryptString: (encrypted: string) => ipcRenderer.invoke('decrypt-string', encrypted),
+
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
   
   readFileBase64: (filePath: string) => ipcRenderer.invoke('read-file-base64', filePath),

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, safeStorage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
@@ -366,6 +366,38 @@ ipcMain.handle('log-set-level', async (_e, level: 'DEBUG'|'INFO'|'WARN'|'ERROR')
 ipcMain.handle('open-path', async (_e, dirPath: string) => {
   if (dirPath) {
     await shell.openPath(dirPath);
+  }
+});
+
+// Secure storage: Encrypt string
+ipcMain.handle('encrypt-string', async (_e, plainText: string) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    logger.error('Encryption', 'Encryption not available on this platform');
+    throw new Error('Encryption not available on this platform');
+  }
+
+  try {
+    const encrypted = safeStorage.encryptString(plainText);
+    return encrypted.toString('base64');
+  } catch (error) {
+    logger.error('Encryption', 'Failed to encrypt string', error);
+    throw error;
+  }
+});
+
+// Secure storage: Decrypt string
+ipcMain.handle('decrypt-string', async (_e, encryptedBase64: string) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    logger.error('Decryption', 'Encryption not available on this platform');
+    throw new Error('Encryption not available on this platform');
+  }
+
+  try {
+    const buffer = Buffer.from(encryptedBase64, 'base64');
+    return safeStorage.decryptString(buffer);
+  } catch (error) {
+    logger.error('Decryption', 'Failed to decrypt string', error);
+    throw error;
   }
 });
 
