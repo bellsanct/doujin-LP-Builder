@@ -12,6 +12,11 @@ import { getMainTranslations, Language } from './i18n';
 let mainWindow: BrowserWindow | null = null;
 let currentLanguage: Language = 'ja';
 
+const ensureZipPath = (filePath: string): string => {
+  if (!filePath) return filePath;
+  return filePath.toLowerCase().endsWith('.zip') ? filePath : `${filePath}.zip`;
+};
+
 function createApplicationMenu() {
   const isMac = process.platform === 'darwin';
   const t = getMainTranslations(currentLanguage);
@@ -188,12 +193,17 @@ ipcMain.handle('select-file', async (_e, options?: { filters?: { name: string; e
 });
 
 ipcMain.handle('select-save-path', async (_e, options?: { defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => {
+  const suggestedName = options?.defaultPath || 'lp-build.zip';
+  const defaultPath = path.isAbsolute(suggestedName)
+    ? suggestedName
+    : path.join(app.getPath('downloads'), suggestedName);
   const res = await dialog.showSaveDialog({
-    defaultPath: options?.defaultPath,
+    defaultPath,
     filters: options?.filters ?? [{ name: 'ZIP', extensions: ['zip'] }],
     properties: ['createDirectory', 'showOverwriteConfirmation']
   });
-  return res.canceled || !res.filePath ? null : res.filePath;
+  if (res.canceled || !res.filePath) return null;
+  return ensureZipPath(res.filePath);
 });
 
 ipcMain.handle('select-directory', async () => {
@@ -213,10 +223,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
       throw new Error('出力先パスが取得できませんでした');
     }
     const { template, config } = options;
-    let outputPath = options.outputZipPath;
-    if (!outputPath.toLowerCase().endsWith('.zip')) {
-      outputPath = `${outputPath}.zip`;
-    }
+    const outputPath = ensureZipPath(options.outputZipPath);
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     const Handlebars = require('handlebars');
     // Helper登録（rendererと同等のものを最低限サポート）
@@ -290,9 +297,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
       });
     };
 
-    // data URLをassets配下に分離
-    renderedHtml = extractDataUrls(renderedHtml, 'html');
-    const stylesContent = extractDataUrls(template.styles || '', 'css');
+    // data URLs are saved under assets and written to the ZIP
 
     const toAssetEntryPath = (name: string): string => {
       const raw = String(name || '');
@@ -302,6 +307,9 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
       const normalized = parts.length > 0 ? parts.join('/') : 'asset';
       return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
     };
+
+    renderedHtml = extractDataUrls(renderedHtml, 'html');
+    const stylesContent = extractDataUrls(template.styles || '', 'css');
 
     const zip = new AdmZip();
     zip.addFile('index.html', Buffer.from(renderedHtml, 'utf-8'));
