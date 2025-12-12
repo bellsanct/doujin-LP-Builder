@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, safeStorage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
@@ -36,6 +36,8 @@ function createApplicationMenu() {
         { label: t.menu.openTemplate, accelerator: 'CmdOrCtrl+O', click: () => mainWindow?.webContents.send('menu-open-template') },
         { label: t.menu.exportHTML, accelerator: 'CmdOrCtrl+S', click: () => mainWindow?.webContents.send('menu-export-html') },
         { type: 'separator' },
+        { label: t.menu.settings, accelerator: 'CmdOrCtrl+,', click: () => mainWindow?.webContents.send('menu-open-settings') },
+        { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },
@@ -51,31 +53,6 @@ function createApplicationMenu() {
         { label: t.menu.zoomOut, role: 'zoomOut' },
         { type: 'separator' },
         { label: t.menu.toggleFullscreen, role: 'togglefullscreen' }
-      ]
-    },
-    {
-      label: t.menu.language,
-      submenu: [
-        {
-          label: t.menu.japanese,
-          type: 'radio',
-          checked: currentLanguage === 'ja',
-          click: () => {
-            currentLanguage = 'ja';
-            mainWindow?.webContents.send('change-language', 'ja');
-            createApplicationMenu();
-          }
-        },
-        {
-          label: t.menu.english,
-          type: 'radio',
-          checked: currentLanguage === 'en',
-          click: () => {
-            currentLanguage = 'en';
-            mainWindow?.webContents.send('change-language', 'en');
-            createApplicationMenu();
-          }
-        }
       ]
     },
     {
@@ -384,4 +361,43 @@ ipcMain.handle('log-set-directory', async () => {
 });
 ipcMain.handle('log-get-level', async () => logger.getLogLevel());
 ipcMain.handle('log-set-level', async (_e, level: 'DEBUG'|'INFO'|'WARN'|'ERROR') => { await logger.setLogLevel(level as any); });
+
+// Open path (for settings modal)
+ipcMain.handle('open-path', async (_e, dirPath: string) => {
+  if (dirPath) {
+    await shell.openPath(dirPath);
+  }
+});
+
+// Secure storage: Encrypt string
+ipcMain.handle('encrypt-string', async (_e, plainText: string) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    logger.error('Encryption', 'Encryption not available on this platform');
+    throw new Error('Encryption not available on this platform');
+  }
+
+  try {
+    const encrypted = safeStorage.encryptString(plainText);
+    return encrypted.toString('base64');
+  } catch (error) {
+    logger.error('Encryption', 'Failed to encrypt string', error);
+    throw error;
+  }
+});
+
+// Secure storage: Decrypt string
+ipcMain.handle('decrypt-string', async (_e, encryptedBase64: string) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    logger.error('Decryption', 'Encryption not available on this platform');
+    throw new Error('Encryption not available on this platform');
+  }
+
+  try {
+    const buffer = Buffer.from(encryptedBase64, 'base64');
+    return safeStorage.decryptString(buffer);
+  } catch (error) {
+    logger.error('Decryption', 'Failed to decrypt string', error);
+    throw error;
+  }
+});
 

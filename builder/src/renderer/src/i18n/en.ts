@@ -16,6 +16,35 @@ export const en = {
     settings: 'Settings',
   },
 
+  // Settings
+  settings: {
+    title: 'Settings',
+    language: {
+      label: 'Language',
+      description: 'Select application display language',
+      japanese: '日本語',
+      english: 'English',
+    },
+    theme: {
+      label: 'Theme',
+      description: 'Select application appearance',
+      light: 'Light',
+      dark: 'Dark',
+      system: 'System',
+    },
+    logFolder: {
+      label: 'Log Folder Path',
+      description: 'Location for log files',
+      browse: 'Browse',
+      open: 'Open Folder',
+    },
+    netlify: {
+      label: 'Netlify API Key',
+      description: 'API key for Netlify deployment',
+      placeholder: 'Enter API key',
+    },
+  },
+
   // Menu
   menu: {
     file: 'File',
