@@ -61,6 +61,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{siteTitle}}</title>
   <meta name="description" content="{{seoDescription}}">
+
+  <!-- OGP画像（優先順位: ogpImage → heroImage → jacketImage → なし） -->
+  {{#if ogpImage}}
+  <meta property="og:image" content="{{ogpImage}}">
+  {{else}}{{#if heroImage}}
+  <meta property="og:image" content="{{heroImage}}">
+  {{else}}{{#if jacketImage}}
+  <meta property="og:image" content="{{jacketImage}}">
+  {{/if}}{{/if}}{{/if}}
   <style>
     :root {
       --primary-color: {{primaryColor}};
@@ -770,6 +779,7 @@ a:hover {
 {
   "siteTitle": "Album Title - New Release",
   "seoDescription": "青春をテーマにした爽やかなコンセプトアルバム。",
+  "ogpImage": "",
   "primaryColor": "#f4f9fc",
   "secondaryColor": "#4a90e2",
   "accentColor": "#ff9a9e",
@@ -843,6 +853,7 @@ a:hover {
 
 **必須フィールド**:
 
+- `ogpImage`: OGP画像（SNS共有用）。未設定時は `heroImage` → `jacketImage` の順で自動選択
 - `heroPositionX` / `heroPositionY`: 0〜100（%）で位置指定。左/上=0, 右/下=100
 - `heroPositionX_mobile` / `heroPositionY_mobile`: モバイル専用の上書き値。未指定なら PC 値を使用
 - `overlayColor` と `overlayOpacity` - オーバーレイ設定
