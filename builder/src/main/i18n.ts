@@ -10,6 +10,7 @@ export interface MainTranslations {
     file: string;
     openTemplate: string;
     exportHTML: string;
+    settings: string;
     close: string;
     quit: string;
     view: string;
@@ -41,6 +42,7 @@ const ja: MainTranslations = {
     file: 'ファイル',
     openTemplate: 'テンプレートを開く...',
     exportHTML: 'HTMLをエクスポート...',
+    settings: '設定...',
     close: '閉じる',
     quit: '終了',
     view: '表示',
@@ -72,6 +74,7 @@ const en: MainTranslations = {
     file: 'File',
     openTemplate: 'Open Template...',
     exportHTML: 'Export HTML...',
+    settings: 'Settings...',
     close: 'Close',
     quit: 'Quit',
     view: 'View',

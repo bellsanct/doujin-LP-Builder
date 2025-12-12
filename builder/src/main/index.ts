@@ -36,6 +36,8 @@ function createApplicationMenu() {
         { label: t.menu.openTemplate, accelerator: 'CmdOrCtrl+O', click: () => mainWindow?.webContents.send('menu-open-template') },
         { label: t.menu.exportHTML, accelerator: 'CmdOrCtrl+S', click: () => mainWindow?.webContents.send('menu-export-html') },
         { type: 'separator' },
+        { label: t.menu.settings, accelerator: 'CmdOrCtrl+,', click: () => mainWindow?.webContents.send('menu-open-settings') },
+        { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },
@@ -51,31 +53,6 @@ function createApplicationMenu() {
         { label: t.menu.zoomOut, role: 'zoomOut' },
         { type: 'separator' },
         { label: t.menu.toggleFullscreen, role: 'togglefullscreen' }
-      ]
-    },
-    {
-      label: t.menu.language,
-      submenu: [
-        {
-          label: t.menu.japanese,
-          type: 'radio',
-          checked: currentLanguage === 'ja',
-          click: () => {
-            currentLanguage = 'ja';
-            mainWindow?.webContents.send('change-language', 'ja');
-            createApplicationMenu();
-          }
-        },
-        {
-          label: t.menu.english,
-          type: 'radio',
-          checked: currentLanguage === 'en',
-          click: () => {
-            currentLanguage = 'en';
-            mainWindow?.webContents.send('change-language', 'en');
-            createApplicationMenu();
-          }
-        }
       ]
     },
     {
@@ -384,4 +361,11 @@ ipcMain.handle('log-set-directory', async () => {
 });
 ipcMain.handle('log-get-level', async () => logger.getLogLevel());
 ipcMain.handle('log-set-level', async (_e, level: 'DEBUG'|'INFO'|'WARN'|'ERROR') => { await logger.setLogLevel(level as any); });
+
+// Open path (for settings modal)
+ipcMain.handle('open-path', async (_e, dirPath: string) => {
+  if (dirPath) {
+    await shell.openPath(dirPath);
+  }
+});
 

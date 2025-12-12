@@ -3,6 +3,7 @@ import './App.css';
 import TemplateOpener, { TemplateOpenerRef } from './components/TemplateOpener';
 import ConfigEditor, { ConfigEditorRef } from './components/ConfigEditor';
 import PreviewPane from './components/PreviewPane';
+import { SettingsModal } from './components/SettingsModal';
 import { Button, Title3 } from '@fluentui/react-components';
 import { PaintBrush24Regular, FolderOpen24Regular, Play24Regular, Save24Regular } from '@fluentui/react-icons';
 import { saveTemplateWithUserConfig, exportStaticSiteZip } from './utils/templateSaver';
@@ -28,6 +29,7 @@ function AppContent() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateArchive | null>(null);
   const [config, setConfig] = useState<UserConfig | null>(null);
   const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const templateOpenerRef = useRef<TemplateOpenerRef>(null);
   const configEditorRef = useRef<ConfigEditorRef | null>(null);
 
@@ -167,13 +169,18 @@ function AppContent() {
     const handleChangeLanguage = (lang: 'ja' | 'en') => {
       setLanguage(lang);
     };
+    const handleMenuOpenSettings = () => {
+      setSettingsModalOpen(true);
+    };
     const removeMenuOpenListener = (window as any).electronAPI.onMenuEvent?.('menu-open-template', handleMenuOpenTemplate);
     const removeMenuExportListener = (window as any).electronAPI.onMenuEvent?.('menu-export-html', handleMenuExportHTML);
     const removeLanguageListener = (window as any).electronAPI.onMenuEvent?.('change-language', handleChangeLanguage);
+    const removeSettingsListener = (window as any).electronAPI.onMenuEvent?.('menu-open-settings', handleMenuOpenSettings);
     return () => {
       removeMenuOpenListener?.();
       removeMenuExportListener?.();
       removeLanguageListener?.();
+      removeSettingsListener?.();
     };
   }, [selectedTemplate, config, t, setLanguage]);
 
@@ -221,6 +228,7 @@ function AppContent() {
           </div>
         </>
       )}
+      <SettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
     </div>
   );
 }

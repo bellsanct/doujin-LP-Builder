@@ -22,7 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }) => ipcRenderer.invoke('select-save-path', options),
   
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
-  
+
+  openPath: (dirPath: string) => ipcRenderer.invoke('open-path', dirPath),
+
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
   
   readFileBase64: (filePath: string) => ipcRenderer.invoke('read-file-base64', filePath),

@@ -16,6 +16,35 @@ export const ja = {
     settings: '設定',
   },
 
+  // Settings
+  settings: {
+    title: '設定',
+    language: {
+      label: '言語',
+      description: 'アプリケーションの表示言語を選択します',
+      japanese: '日本語',
+      english: 'English',
+    },
+    theme: {
+      label: 'テーマ',
+      description: 'アプリケーションの外観を選択します',
+      light: 'ライト',
+      dark: 'ダーク',
+      system: 'システムに合わせる',
+    },
+    logFolder: {
+      label: 'ログフォルダパス',
+      description: 'ログファイルの保存場所',
+      browse: '参照',
+      open: 'フォルダを開く',
+    },
+    netlify: {
+      label: 'Netlify API キー',
+      description: 'Netlify へのデプロイに使用する API キー',
+      placeholder: 'API キーを入力',
+    },
+  },
+
   // Menu
   menu: {
     file: 'ファイル',
