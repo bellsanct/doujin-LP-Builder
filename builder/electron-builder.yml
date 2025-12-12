@@ -1,0 +1,62 @@
+appId: com.doujin.criclify
+productName: Criclify
+copyright: Copyright © 2024 Doujin LP Project
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - dist/**/*
+  - package.json
+  - "!**/*.ts"
+  - "!src/**/*"
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  artifactName: ${productName} Setup ${version}.${ext}
+
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}
+
+mac:
+  icon: build/icon.png
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+
+dmg:
+  artifactName: ${productName}-${version}.${ext}
+  title: ${productName} ${version}
+
+linux:
+  icon: build/icon.png
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+
+publish: null
