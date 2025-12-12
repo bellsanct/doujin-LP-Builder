@@ -124,14 +124,20 @@ function AppContent() {
 
     if ((window as any)?.electronAPI?.selectSavePath && (window as any)?.electronAPI?.buildLP) {
       try {
-        const defaultName = `${selectedTemplate.manifest?.id || 'lp'}-build.zip`;
+        const ensureZipPath = (filePath: string) => (filePath?.toLowerCase().endsWith('.zip') ? filePath : `${filePath}.zip`);
+        const safeId = `${selectedTemplate.manifest?.id || 'lp'}`.replace(/[\\/:*?"<>|]/g, '_');
+        const defaultName = `${safeId}-build.zip`;
         const outputZipPath = await (window as any).electronAPI.selectSavePath({
           defaultPath: defaultName,
           filters: [{ name: 'ZIP', extensions: ['zip'] }],
         });
         if (!outputZipPath) return;
         const templateForBuild = { ...selectedTemplate, assets: serializeAssets((selectedTemplate as any).assets) };
-        const result = await (window as any).electronAPI.buildLP({ template: templateForBuild, config, outputZipPath });
+        const result = await (window as any).electronAPI.buildLP({
+          template: templateForBuild,
+          config,
+          outputZipPath: ensureZipPath(outputZipPath),
+        });
         if (result?.success) {
           alert(t.messages.buildSuccess.replace('{path}', result.outputPath));
         } else {

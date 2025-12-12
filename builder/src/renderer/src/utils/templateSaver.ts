@@ -71,8 +71,137 @@ export async function exportStaticSiteZip(template: Template, config: any): Prom
   const compiled = Handlebars.compile(template.template);
   const html = compiled(config);
 
-  zip.file('index.html', html);
-  zip.file('style.css', template.styles || '');
+  const toAssetEntryPath = (name: string): string => {
+    const raw = String(name || '');
+    const withoutDrive = raw.replace(/^[a-zA-Z]:/, '');
+    const sanitized = withoutDrive.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
+    const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
+    const normalized = parts.length > 0 ? parts.join('/') : 'asset';
+    return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
+  };
+
+  const toUint8Array = (data: any): Uint8Array | null => {
+    try {
+      if (data instanceof Uint8Array) return data;
+      if (Array.isArray(data)) return new Uint8Array(data);
+      if (typeof data === 'string') {
+        // base64 string
+        if (typeof Buffer !== 'undefined') return Uint8Array.from(Buffer.from(data, 'base64'));
+        const bin = atob(data);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i += 1) arr[i] = bin.charCodeAt(i);
+        return arr;
+      }
+      if ((data as any)?.type === 'Buffer' && Array.isArray((data as any).data)) {
+        return new Uint8Array((data as any).data);
+      }
+    } catch {}
+    return null;
+  };
+
+  const assetBufferMap = new Map<string, { filename: string; buffer: Uint8Array }>();
+  const recordAssetBuffer = (filename: string, buf: Uint8Array) => {
+    try {
+      // Simple hash for dedup
+      let hash = 0;
+      for (let i = 0; i < buf.length; i += 1) {
+        hash = (hash * 31 + buf[i]) >>> 0;
+      }
+      assetBufferMap.set(String(hash), { filename, buffer: buf });
+    } catch {}
+  };
+
+  const mimeExtMap: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+    'image/webp': 'webp',
+    'image/x-icon': 'ico'
+  };
+
+  const preloadExistingAssets = (assets: any) => {
+    try {
+      if (typeof assets?.forEach === 'function' && typeof assets.size === 'number') {
+        (assets as Map<string, any>).forEach((data: any, filename: string) => {
+          const arr = toUint8Array(data);
+          if (!arr) return;
+          recordAssetBuffer(toAssetEntryPath(filename), arr);
+        });
+      } else if (Array.isArray(assets)) {
+        for (const a of assets) {
+          const arr = toUint8Array(a?.data);
+          if (!a?.filename || !arr) continue;
+          recordAssetBuffer(toAssetEntryPath(a.filename), arr);
+        }
+      } else if (assets && typeof assets === 'object') {
+        for (const k of Object.keys(assets)) {
+          const arr = toUint8Array((assets as any)[k]);
+          if (!arr) continue;
+          recordAssetBuffer(toAssetEntryPath(k), arr);
+        }
+      }
+    } catch {}
+  };
+
+  const extractedAssets: { filename: string; buffer: Uint8Array }[] = [];
+  let inlineAssetCounter = 0;
+  const seenInline = new Map<string, string>();
+  const extractDataUrls = (content: string, kind: 'html' | 'css'): string => {
+    if (!content) return content;
+    const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+    return content.replace(dataUrlRegex, (_m, mime, base64) => {
+      const mimeLower = String(mime || '').toLowerCase();
+      const key = `${mimeLower}:${base64.substring(0, 32)}`;
+      const existing = seenInline.get(key);
+      if (existing) return existing;
+
+      let buffer: Uint8Array | null = null;
+      try {
+        if (typeof Buffer !== 'undefined') {
+          buffer = Uint8Array.from(Buffer.from(base64, 'base64'));
+        } else {
+          const bin = atob(base64);
+          const arr = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i += 1) arr[i] = bin.charCodeAt(i);
+          buffer = arr;
+        }
+      } catch {}
+
+      if (buffer) {
+        // Reuse existing asset name if content matches
+        let filename = '';
+        try {
+          let hash = 0;
+          for (let i = 0; i < buffer.length; i += 1) hash = (hash * 31 + buffer[i]) >>> 0;
+          const match = assetBufferMap.get(String(hash));
+          if (match) {
+            filename = toAssetEntryPath(match.filename);
+          }
+        } catch {}
+
+        if (!filename) {
+          inlineAssetCounter += 1;
+          const ext = mimeExtMap[mimeLower] || 'bin';
+          filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
+          extractedAssets.push({ filename, buffer });
+        }
+
+        seenInline.set(key, filename);
+        return filename;
+      }
+
+      return `assets/inline-${kind}-${++inlineAssetCounter}.bin`;
+    });
+  };
+
+  preloadExistingAssets(template.assets);
+  let renderedHtml = extractDataUrls(html, 'html');
+  const stylesContent = extractDataUrls(template.styles || '', 'css');
+
+  zip.file('index.html', renderedHtml);
+  zip.file('style.css', stylesContent || '');
   if (template.scripts) {
     zip.file('script.js', template.scripts);
   }
@@ -80,14 +209,11 @@ export async function exportStaticSiteZip(template: Template, config: any): Prom
   // Write assets for Map / Array / Object
   const addAsset = (filename: string, data: any) => {
     if (!filename) return;
-    if (data instanceof Uint8Array || Array.isArray(data)) {
-      zip.file(filename, data as any);
-    } else if (typeof data === 'string') {
-      // Try base64 string
-      zip.file(filename, data, { base64: true });
-    } else if (typeof Buffer !== 'undefined' && (data as any)?.type === 'Buffer' && Array.isArray((data as any).data)) {
-      zip.file(filename, (data as any).data);
-    }
+    const arr = toUint8Array(data);
+    if (!arr) return;
+    const entryPath = toAssetEntryPath(filename);
+    zip.file(entryPath, arr as any);
+    recordAssetBuffer(entryPath, arr);
   };
 
   const assets = template.assets;
@@ -102,6 +228,13 @@ export async function exportStaticSiteZip(template: Template, config: any): Prom
       }
     }
   } catch {}
+
+  // Add extracted inline assets
+  extractedAssets.forEach(({ filename, buffer }) => {
+    const entryPath = toAssetEntryPath(filename);
+    zip.file(entryPath, buffer as any);
+    recordAssetBuffer(entryPath, buffer);
+  });
 
   const blob = await zip.generateAsync({ type: 'blob' });
   const fileName = `${template.manifest?.id || 'lp'}-build.zip`;
