@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, Menu, safeStorage } from 'e
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
+import { pathToFileURL } from 'url';
 import AdmZip from 'adm-zip';
 import { loadTemplate, validateTemplateFile } from './templateLoader';
 import { logger } from './logger';
@@ -11,10 +12,42 @@ import { getMainTranslations, Language } from './i18n';
 
 let mainWindow: BrowserWindow | null = null;
 let currentLanguage: Language = 'ja';
+let assetCacheDir: string | null = null;
 
 const ensureZipPath = (filePath: string): string => {
   if (!filePath) return filePath;
   return filePath.toLowerCase().endsWith('.zip') ? filePath : `${filePath}.zip`;
+};
+
+const ensureAssetCacheDir = async (): Promise<string> => {
+  if (assetCacheDir) return assetCacheDir;
+  const dir = path.join(app.getPath('userData'), 'assets-cache');
+  await fs.mkdir(dir, { recursive: true });
+  assetCacheDir = dir;
+  return dir;
+};
+
+const sanitizeAssetEntryPath = (name: string): string => {
+  const raw = String(name || '');
+  const withoutDrive = raw.replace(/^[a-zA-Z]:/, '');
+  const sanitized = withoutDrive.replace(/^[\\/]+/, '').replace(/\\+/g, '/');
+  const parts = sanitized.split('/').filter((p: string) => p && p !== '.' && p !== '..');
+  const normalized = parts.length > 0 ? parts.join('/') : 'asset';
+  return normalized.startsWith('assets/') ? normalized : `assets/${normalized}`;
+};
+
+const writeAssetToCache = async (filename: string, buf: Buffer): Promise<{ filePath: string; virtualPath: string }> => {
+  const dir = await ensureAssetCacheDir();
+  const ext = path.extname(filename || '') || '.bin';
+  const hash = crypto.createHash('sha256').update(buf).digest('hex');
+  const virtualPath = sanitizeAssetEntryPath(`${hash}${ext}`);
+  const target = path.join(dir, `${hash}${ext}`);
+  try {
+    await fs.access(target);
+  } catch {
+    await fs.writeFile(target, buf);
+  }
+  return { filePath: target, virtualPath };
 };
 
 function createApplicationMenu() {
@@ -216,6 +249,13 @@ ipcMain.handle('read-file-base64', async (_e, filePath: string) => (await fs.rea
 ipcMain.handle('write-file', async (_e, filePath: string, content: string) => { await fs.writeFile(filePath, content, 'utf8'); return true; });
 ipcMain.handle('create-directory', async (_e, dirPath: string) => { await fs.mkdir(dirPath, { recursive: true }); return true; });
 ipcMain.handle('copy-file', async (_e, src: string, dest: string) => { await fs.copyFile(src, dest); return true; });
+ipcMain.handle('cache-asset-buffer', async (_e, payload: { filename?: string; data: number[]; mime?: string }) => {
+  if (!payload?.data || !Array.isArray(payload.data)) throw new Error('invalid payload');
+  const name = payload.filename || 'asset.bin';
+  const buffer = Buffer.from(payload.data);
+  const { filePath, virtualPath } = await writeAssetToCache(name, buffer);
+  return { filePath, fileUrl: pathToFileURL(filePath).href, virtualPath };
+});
 
 ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildResult> => {
   try {
@@ -294,22 +334,26 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     const seenInline = new Map<string, string>();
     const extractDataUrls = (content: string, kind: 'html'|'css'): string => {
       if (!content) return content;
-      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=\\s]+?)(?=[\"'\\)\\s]|$)/g;
       return content.replace(dataUrlRegex, (_m, mime, base64) => {
-        const mimeLower = String(mime || '').toLowerCase();
-        const key = `${mimeLower}:${base64.substring(0, 32)}`;
-        let filename = seenInline.get(key);
-        if (filename) return filename;
+        const mimeLower = String(mime || '').toLowerCase().trim();
+        const normalizedBase64 = String(base64 || '').replace(/\s+/g, '');
+        if (!normalizedBase64) return _m;
+
+        const key = `${mimeLower}:${normalizedBase64.substring(0, 32)}`;
+        const cached = seenInline.get(key);
+        if (cached) return cached;
 
         let buffer: Buffer | null = null;
-        try { buffer = Buffer.from(base64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+        try { buffer = Buffer.from(normalizedBase64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+        if (!buffer) return _m;
 
         // 既存の assets とハッシュ照合してファイル名を復元
         if (buffer) {
           const hash = crypto.createHash('sha256').update(buffer).digest('hex');
           const match = assetBufferMap.get(hash);
           if (match) {
-            filename = toAssetEntryPath(match.filename);
+            const filename = toAssetEntryPath(match.filename);
             seenInline.set(key, filename);
             return filename;
           }
@@ -318,7 +362,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
         // 見つからない場合は inline 付与で新規に出力
         inlineAssetCounter += 1;
         const ext = mimeExtMap[mimeLower] || 'bin';
-        filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
+        const filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
         seenInline.set(key, filename);
         if (buffer) {
           try { extractedAssets.push({ filename, buffer }); } catch (e) { console.error('Failed to store inline asset', e); }

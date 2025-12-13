@@ -150,49 +150,50 @@ export async function exportStaticSiteZip(template: Template, config: any): Prom
   const seenInline = new Map<string, string>();
   const extractDataUrls = (content: string, kind: 'html' | 'css'): string => {
     if (!content) return content;
-    const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+    const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=\\s]+?)(?=[\"'\\)\\s]|$)/g;
     return content.replace(dataUrlRegex, (_m, mime, base64) => {
-      const mimeLower = String(mime || '').toLowerCase();
-      const key = `${mimeLower}:${base64.substring(0, 32)}`;
+      const mimeLower = String(mime || '').toLowerCase().trim();
+      const normalizedBase64 = String(base64 || '').replace(/\s+/g, '');
+      if (!normalizedBase64) return _m;
+
+      const key = `${mimeLower}:${normalizedBase64.substring(0, 32)}`;
       const existing = seenInline.get(key);
       if (existing) return existing;
 
       let buffer: Uint8Array | null = null;
       try {
         if (typeof Buffer !== 'undefined') {
-          buffer = Uint8Array.from(Buffer.from(base64, 'base64'));
+          buffer = Uint8Array.from(Buffer.from(normalizedBase64, 'base64'));
         } else {
-          const bin = atob(base64);
+          const bin = atob(normalizedBase64);
           const arr = new Uint8Array(bin.length);
           for (let i = 0; i < bin.length; i += 1) arr[i] = bin.charCodeAt(i);
           buffer = arr;
         }
       } catch {}
 
-      if (buffer) {
-        // Reuse existing asset name if content matches
-        let filename = '';
-        try {
-          let hash = 0;
-          for (let i = 0; i < buffer.length; i += 1) hash = (hash * 31 + buffer[i]) >>> 0;
-          const match = assetBufferMap.get(String(hash));
-          if (match) {
-            filename = toAssetEntryPath(match.filename);
-          }
-        } catch {}
+      if (!buffer) return _m;
 
-        if (!filename) {
-          inlineAssetCounter += 1;
-          const ext = mimeExtMap[mimeLower] || 'bin';
-          filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
-          extractedAssets.push({ filename, buffer });
+      // Reuse existing asset name if content matches
+      let filename = '';
+      try {
+        let hash = 0;
+        for (let i = 0; i < buffer.length; i += 1) hash = (hash * 31 + buffer[i]) >>> 0;
+        const match = assetBufferMap.get(String(hash));
+        if (match) {
+          filename = toAssetEntryPath(match.filename);
         }
+      } catch {}
 
-        seenInline.set(key, filename);
-        return filename;
+      if (!filename) {
+        inlineAssetCounter += 1;
+        const ext = mimeExtMap[mimeLower] || 'bin';
+        filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
+        extractedAssets.push({ filename, buffer });
       }
 
-      return `assets/inline-${kind}-${++inlineAssetCounter}.bin`;
+      seenInline.set(key, filename);
+      return filename;
     });
   };
 
