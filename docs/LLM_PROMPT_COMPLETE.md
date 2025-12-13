@@ -61,15 +61,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{siteTitle}}</title>
   <meta name="description" content="{{seoDescription}}">
+  <meta name="theme-color" content="{{primaryColor}}">
+
+  <!-- Open Graph Protocol -->
+  <meta property="og:title" content="{{siteTitle}}">
+  <meta property="og:description" content="{{seoDescription}}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  {{#if siteName}}<meta property="og:site_name" content="{{siteName}}">{{/if}}
+  {{#if siteUrl}}<meta property="og:url" content="{{siteUrl}}">{{/if}}
 
   <!-- OGP画像（優先順位: ogpImage → heroImage → jacketImage → なし） -->
   {{#if ogpImage}}
   <meta property="og:image" content="{{ogpImage}}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   {{else}}{{#if heroImage}}
   <meta property="og:image" content="{{heroImage}}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   {{else}}{{#if jacketImage}}
   <meta property="og:image" content="{{jacketImage}}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   {{/if}}{{/if}}{{/if}}
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{siteTitle}}">
+  <meta name="twitter:description" content="{{seoDescription}}">
+  {{#if ogpImage}}
+  <meta name="twitter:image" content="{{ogpImage}}">
+  {{else}}{{#if heroImage}}
+  <meta name="twitter:image" content="{{heroImage}}">
+  {{else}}{{#if jacketImage}}
+  <meta name="twitter:image" content="{{jacketImage}}">
+  {{/if}}{{/if}}{{/if}}
+
   <style>
     :root {
       --primary-color: {{primaryColor}};
@@ -778,6 +806,8 @@ a:hover {
 ```json
 {
   "siteTitle": "Album Title - New Release",
+  "siteName": "Sound Circle",
+  "siteUrl": "",
   "seoDescription": "青春をテーマにした爽やかなコンセプトアルバム。",
   "ogpImage": "",
   "primaryColor": "#f4f9fc",
@@ -853,6 +883,8 @@ a:hover {
 
 **必須フィールド**:
 
+- `siteName`: サイト名/サークル名（OGPのog:site_nameに使用、オプショナル）
+- `siteUrl`: 公開先URL（OGPのog:urlに使用、オプショナル。設定するとOGP画像がフルパス表示）
 - `ogpImage`: OGP画像（SNS共有用）。未設定時は `heroImage` → `jacketImage` の順で自動選択
 - `heroPositionX` / `heroPositionY`: 0〜100（%）で位置指定。左/上=0, 右/下=100
 - `heroPositionX_mobile` / `heroPositionY_mobile`: モバイル専用の上書き値。未指定なら PC 値を使用
