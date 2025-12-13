@@ -40,6 +40,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   copyFile: (src: string, dest: string) => ipcRenderer.invoke('copy-file', src, dest),
   
+  cacheAssetBuffer: (payload: { filename?: string; data: number[]; mime?: string }) =>
+    ipcRenderer.invoke('cache-asset-buffer', payload),
+  
   // ビルド
   buildLP: (options: {
     template: any;

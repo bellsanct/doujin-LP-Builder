@@ -280,7 +280,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
       return (match && match[2].length === 11) ? match[2] : '';
     });
 
-    const doRender = () => {
+    const doRender = async () => {
       try {
       // 繧｢繧ｻ繝・ヨ繧奪ata URL縺ｫ螟画鋤縺吶ｋ髢｢謨ｰ
       const convertAssetsToDataUrls = (content: string): string => {
@@ -318,6 +318,60 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
         return result;
       };
 
+      // アセットをキャッシュまたはBlob URLに変換する関数（data URLを避ける）
+      const convertAssetsToUrls = async (content: string): Promise<string> => {
+        let result = content;
+
+        if (template.assets && template.assets.size > 0) {
+          for (const [filename, buffer] of template.assets.entries()) {
+            const ext = filename.split('.').pop()?.toLowerCase();
+            const mimeTypes: Record<string, string> = {
+              'png': 'image/png',
+              'jpg': 'image/jpeg',
+              'jpeg': 'image/jpeg',
+              'gif': 'image/gif',
+              'svg': 'image/svg+xml',
+              'webp': 'image/webp',
+              'ico': 'image/x-icon',
+            };
+
+            const mimeType = mimeTypes[ext || ''] || 'application/octet-stream';
+            let url: string | null = null;
+
+            // 優先: Electron 側のキャッシュに書き出して file URL を受け取る
+            try {
+              const arr = buffer instanceof Uint8Array ? Array.from(buffer) : [];
+              if (arr.length > 0 && (window as any)?.electronAPI?.cacheAssetBuffer) {
+                const cached = await (window as any).electronAPI.cacheAssetBuffer({
+                  filename,
+                  data: arr,
+                  mime: mimeType,
+                });
+                url = cached?.fileUrl || cached?.filePath || null;
+              }
+            } catch (e) {
+              console.error('Failed to cache asset buffer for preview:', filename, e);
+            }
+
+            // フォールバック: Blob URL を生成
+            if (!url) {
+              try {
+                const blob = new Blob([buffer], { type: mimeType });
+                url = URL.createObjectURL(blob);
+              } catch (e) {
+                console.error('Failed to create object URL for asset:', filename, e);
+              }
+            }
+
+            if (!url) continue;
+            const escaped = filename.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+            result = result.replace(new RegExp(escaped, 'g'), url);
+          }
+        }
+
+        return result;
+      };
+
       // Handlebars繝・Φ繝励Ξ繝ｼ繝医ｒ繧ｳ繝ｳ繝代う繝ｫ
       console.log('畑 [PreviewPane] Compiling template...', {
         templateLength: template.template?.length,
@@ -338,7 +392,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
       }
 
       // 繧｢繧ｻ繝・ヨ繧奪ata URL縺ｫ螟画鋤
-      html = convertAssetsToDataUrls(html);
+      html = await convertAssetsToUrls(html);
 
       if (!html || html.trim().length === 0) {
         console.warn('笞・・[PreviewPane] Generated HTML is empty!');
@@ -347,7 +401,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
       }
 
       // CSS繧ゅい繧ｻ繝・ヨ蜿ら・繧貞､画鋤
-      const styles = convertAssetsToDataUrls(template.styles);
+      const styles = await convertAssetsToUrls(template.styles);
 
       // iframe縺ｫ譖ｸ縺崎ｾｼ縺ｿ
       const iframe = iframeRef.current;
