@@ -294,22 +294,26 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     const seenInline = new Map<string, string>();
     const extractDataUrls = (content: string, kind: 'html'|'css'): string => {
       if (!content) return content;
-      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=\\s]+?)(?=[\"'\\)\\s]|$)/g;
       return content.replace(dataUrlRegex, (_m, mime, base64) => {
-        const mimeLower = String(mime || '').toLowerCase();
-        const key = `${mimeLower}:${base64.substring(0, 32)}`;
-        let filename = seenInline.get(key);
-        if (filename) return filename;
+        const mimeLower = String(mime || '').toLowerCase().trim();
+        const normalizedBase64 = String(base64 || '').replace(/\s+/g, '');
+        if (!normalizedBase64) return _m;
+
+        const key = `${mimeLower}:${normalizedBase64.substring(0, 32)}`;
+        const cached = seenInline.get(key);
+        if (cached) return cached;
 
         let buffer: Buffer | null = null;
-        try { buffer = Buffer.from(base64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+        try { buffer = Buffer.from(normalizedBase64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+        if (!buffer) return _m;
 
         // 既存の assets とハッシュ照合してファイル名を復元
         if (buffer) {
           const hash = crypto.createHash('sha256').update(buffer).digest('hex');
           const match = assetBufferMap.get(hash);
           if (match) {
-            filename = toAssetEntryPath(match.filename);
+            const filename = toAssetEntryPath(match.filename);
             seenInline.set(key, filename);
             return filename;
           }
@@ -318,7 +322,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
         // 見つからない場合は inline 付与で新規に出力
         inlineAssetCounter += 1;
         const ext = mimeExtMap[mimeLower] || 'bin';
-        filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
+        const filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
         seenInline.set(key, filename);
         if (buffer) {
           try { extractedAssets.push({ filename, buffer }); } catch (e) { console.error('Failed to store inline asset', e); }
