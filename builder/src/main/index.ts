@@ -14,7 +14,6 @@ let mainWindow: BrowserWindow | null = null;
 let currentLanguage: Language = 'ja';
 let assetCacheDir: string | null = null;
 const assetHashToEntry = new Map<string, string>();
-const assetHashToEntry = new Map<string, string>();
 
 const ensureZipPath = (filePath: string): string => {
   if (!filePath) return filePath;
