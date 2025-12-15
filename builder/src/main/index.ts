@@ -11,6 +11,7 @@ import { getMainTranslations, Language } from './i18n';
 
 let mainWindow: BrowserWindow | null = null;
 let currentLanguage: Language = 'ja';
+const assetHashToEntry = new Map<string, string>();
 
 const ensureZipPath = (filePath: string): string => {
   if (!filePath) return filePath;
@@ -251,10 +252,13 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
 
     // assets の内容をハッシュ化して、data URL から逆引きできるように準備
     const assetBufferMap = new Map<string, { filename: string; buffer: Buffer }>();
+    const hashBuffer = (buf: Buffer) => crypto.createHash('sha256').update(buf).digest('hex');
     const recordAssetBuffer = (filename: string, buf: Buffer) => {
       try {
-        const hash = crypto.createHash('sha256').update(buf).digest('hex');
-        assetBufferMap.set(hash, { filename, buffer: buf });
+        const entryPath = toAssetEntryPath(filename);
+        const hash = hashBuffer(buf);
+        assetBufferMap.set(hash, { filename: entryPath, buffer: buf });
+        assetHashToEntry.set(hash, entryPath);
       } catch (e) { console.error('Failed to hash asset buffer', filename, e); }
     };
 
@@ -290,40 +294,38 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     };
 
     const extractedAssets: { filename: string; buffer: Buffer }[] = [];
-    let inlineAssetCounter = 0;
     const seenInline = new Map<string, string>();
+    const decodeBase64Safe = (b64: string): Buffer => {
+      const cleaned = String(b64 || '').replace(/\s+/g, '');
+      const padded = cleaned.length % 4 === 0 ? cleaned : cleaned + '='.repeat((4 - (cleaned.length % 4)) % 4);
+      return Buffer.from(padded, 'base64');
+    };
+    const getExtFromMime = (mimeLower: string) => mimeExtMap[mimeLower] || mimeExtMap[mimeLower.split(';')[0]] || 'bin';
     const extractDataUrls = (content: string, kind: 'html'|'css'): string => {
       if (!content) return content;
-      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+\/=_\-\s]+?)(?=["'\)\s]|$)/g;
       return content.replace(dataUrlRegex, (_m, mime, base64) => {
-        const mimeLower = String(mime || '').toLowerCase();
-        const key = `${mimeLower}:${base64.substring(0, 32)}`;
-        let filename = seenInline.get(key);
-        if (filename) return filename;
-
+        const mimeLower = String(mime || '').toLowerCase().trim();
         let buffer: Buffer | null = null;
-        try { buffer = Buffer.from(base64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+        try { buffer = decodeBase64Safe(base64); } catch (e) {
+          console.error('Failed to decode data URL', e);
+          throw new Error('データURLのデコードに失敗しました');
+        }
+        if (!buffer) throw new Error('データURLのデコードに失敗しました');
 
-        // 既存の assets とハッシュ照合してファイル名を復元
-        if (buffer) {
-          const hash = crypto.createHash('sha256').update(buffer).digest('hex');
-          const match = assetBufferMap.get(hash);
-          if (match) {
-            filename = toAssetEntryPath(match.filename);
-            seenInline.set(key, filename);
-            return filename;
-          }
+        const hash = hashBuffer(buffer);
+        const cachedPath = assetHashToEntry.get(hash) || assetBufferMap.get(hash)?.filename;
+        if (cachedPath) {
+          seenInline.set(hash, cachedPath);
+          return cachedPath;
         }
 
-        // 見つからない場合は inline 付与で新規に出力
-        inlineAssetCounter += 1;
-        const ext = mimeExtMap[mimeLower] || 'bin';
-        filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
-        seenInline.set(key, filename);
-        if (buffer) {
-          try { extractedAssets.push({ filename, buffer }); } catch (e) { console.error('Failed to store inline asset', e); }
-        }
-        return filename;
+        const ext = getExtFromMime(mimeLower);
+        const entryPath = toAssetEntryPath(`${hash}.${ext}`);
+        extractedAssets.push({ filename: entryPath, buffer });
+        assetHashToEntry.set(hash, entryPath);
+        assetBufferMap.set(hash, { filename: entryPath, buffer });
+        return entryPath;
       });
     };
 
