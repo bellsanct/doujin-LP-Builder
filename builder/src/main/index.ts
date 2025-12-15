@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, Menu, safeStorage } from 'e
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
+import { pathToFileURL } from 'url';
 import AdmZip from 'adm-zip';
 import { loadTemplate, validateTemplateFile } from './templateLoader';
 import { logger } from './logger';
@@ -11,11 +12,21 @@ import { getMainTranslations, Language } from './i18n';
 
 let mainWindow: BrowserWindow | null = null;
 let currentLanguage: Language = 'ja';
+let assetCacheDir: string | null = null;
+const assetHashToEntry = new Map<string, string>();
 const assetHashToEntry = new Map<string, string>();
 
 const ensureZipPath = (filePath: string): string => {
   if (!filePath) return filePath;
   return filePath.toLowerCase().endsWith('.zip') ? filePath : `${filePath}.zip`;
+};
+
+const ensureAssetCacheDir = async (): Promise<string> => {
+  if (assetCacheDir) return assetCacheDir;
+  const dir = path.join(app.getPath('userData'), 'assets-cache');
+  await fs.mkdir(dir, { recursive: true });
+  assetCacheDir = dir;
+  return dir;
 };
 
 function createApplicationMenu() {
@@ -217,6 +228,30 @@ ipcMain.handle('read-file-base64', async (_e, filePath: string) => (await fs.rea
 ipcMain.handle('write-file', async (_e, filePath: string, content: string) => { await fs.writeFile(filePath, content, 'utf8'); return true; });
 ipcMain.handle('create-directory', async (_e, dirPath: string) => { await fs.mkdir(dirPath, { recursive: true }); return true; });
 ipcMain.handle('copy-file', async (_e, src: string, dest: string) => { await fs.copyFile(src, dest); return true; });
+ipcMain.handle('cache-asset-buffer', async (_e, payload: { filename?: string; data: number[]; mime?: string }) => {
+  if (!payload?.data || !Array.isArray(payload.data)) throw new Error('invalid payload');
+  const dir = await ensureAssetCacheDir();
+  const buf = Buffer.from(payload.data);
+  const hash = crypto.createHash('sha256').update(buf).digest('hex');
+  const mime = String(payload.mime || '').toLowerCase();
+  const extFromMime: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+    'image/webp': 'webp',
+    'image/x-icon': 'ico'
+  };
+  const extFromName = (payload.filename || '').split('.').pop() || '';
+  const ext = extFromMime[mime] || extFromMime[mime.split(';')[0]] || extFromName || 'bin';
+  const filename = `${hash}.${ext}`;
+  const filePath = path.join(dir, filename);
+  try { await fs.access(filePath); } catch { await fs.writeFile(filePath, buf); }
+  const virtualPath = path.posix.join('assets', filename);
+  assetHashToEntry.set(hash, virtualPath);
+  return { filePath, fileUrl: pathToFileURL(filePath).href, virtualPath, hash };
+});
 
 ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildResult> => {
   try {
