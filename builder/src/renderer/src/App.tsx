@@ -33,7 +33,11 @@ function AppContent() {
   const templateOpenerRef = useRef<TemplateOpenerRef>(null);
   const configEditorRef = useRef<ConfigEditorRef | null>(null);
 
-  const cacheDataUrlToVirtualPath = async (dataUrl: string, hintExt?: string): Promise<string> => {
+  const cacheDataUrlToVirtualPath = async (
+    dataUrl: string,
+    hintExt: string | undefined,
+    pendingAssets: Map<string, Uint8Array>
+  ): Promise<string> => {
     if (!dataUrl?.startsWith('data:')) return dataUrl;
     const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!match) return dataUrl;
@@ -50,14 +54,7 @@ function AppContent() {
           mime,
         });
         const virtual = cached?.virtualPath || dataUrl;
-        if (virtual && selectedTemplate?.assets instanceof Map) {
-          setSelectedTemplate(prev => {
-            if (!prev) return prev;
-            const nextAssets = new Map(prev.assets);
-            nextAssets.set(virtual, bytes);
-            return { ...prev, assets: nextAssets } as any;
-          });
-        }
+        pendingAssets.set(virtual, bytes);
         return virtual;
       }
       return dataUrl;
@@ -67,19 +64,21 @@ function AppContent() {
     }
   };
 
-  const normalizeConfigAssets = async (value: any): Promise<any> => {
+  const normalizeConfigAssets = async (value: any, pendingAssets: Map<string, Uint8Array>): Promise<any> => {
     if (typeof value === 'string') {
       if (value.startsWith('data:')) {
         const ext = value.split(';')[0].split('/').pop();
-        return cacheDataUrlToVirtualPath(value, ext);
+        return cacheDataUrlToVirtualPath(value, ext, pendingAssets);
       }
       return value;
     }
     if (Array.isArray(value)) {
-      return Promise.all(value.map((v) => normalizeConfigAssets(v)));
+      return Promise.all(value.map((v) => normalizeConfigAssets(v, pendingAssets)));
     }
     if (value && typeof value === 'object') {
-      const entries = await Promise.all(Object.entries(value).map(async ([k, v]) => [k, await normalizeConfigAssets(v)]));
+      const entries = await Promise.all(
+        Object.entries(value).map(async ([k, v]) => [k, await normalizeConfigAssets(v, pendingAssets)])
+      );
       return Object.fromEntries(entries);
     }
     return value;
@@ -115,9 +114,16 @@ function AppContent() {
     };
 
     const initialConfig = template.userConfig || template.defaultConfig;
-    const normalized = await normalizeConfigAssets(initialConfig);
+    const pendingAssets = new Map<string, Uint8Array>();
+    const normalized = await normalizeConfigAssets(initialConfig, pendingAssets);
 
-    setSelectedTemplate(template);
+    if (pendingAssets.size > 0) {
+      const nextAssets = new Map(template.assets as Map<string, Uint8Array>);
+      pendingAssets.forEach((buf, vp) => nextAssets.set(vp, buf));
+      setSelectedTemplate({ ...template, assets: nextAssets });
+    } else {
+      setSelectedTemplate(template);
+    }
     setConfig(normalized);
   };
 
@@ -152,7 +158,16 @@ function AppContent() {
       return;
     }
     // data URL をビルド前にキャッシュ化してパス参照へ
-    const normalizedConfig = await normalizeConfigAssets(config);
+    const pendingAssets = new Map<string, Uint8Array>();
+    const normalizedConfig = await normalizeConfigAssets(config, pendingAssets);
+    if (pendingAssets.size > 0) {
+      setSelectedTemplate(prev => {
+        if (!prev) return prev;
+        const nextAssets = new Map(prev.assets as Map<string, Uint8Array>);
+        pendingAssets.forEach((buf, vp) => nextAssets.set(vp, buf));
+        return { ...(prev as any), assets: nextAssets };
+      });
+    }
     setConfig(normalizedConfig);
 
     const serializeAssets = (assets: any): { filename: string; data: number[] }[] => {
