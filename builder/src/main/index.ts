@@ -374,6 +374,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
 
     const assets = (template as any).assets;
+    const addedAssets = new Set<string>();
     if (assets) {
       if (typeof (assets as any).forEach === 'function' && typeof (assets as any).size === 'number') {
         // Map
@@ -384,6 +385,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
             const entryPath = toAssetEntryPath(filename);
             zip.addFile(entryPath, dataBuffer);
             recordAssetBuffer(entryPath, dataBuffer);
+            addedAssets.add(entryPath);
           } catch (e) { console.error('Failed to add asset to zip:', filename, e); }
         });
       } else if (Array.isArray(assets)) {
@@ -394,6 +396,7 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
             const entryPath = toAssetEntryPath(a.filename);
             zip.addFile(entryPath, dataBuffer);
             recordAssetBuffer(entryPath, dataBuffer);
+            addedAssets.add(entryPath);
           } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
         }
       } else if (typeof assets === 'object') {
@@ -405,9 +408,30 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
             const entryPath = toAssetEntryPath(k);
             zip.addFile(entryPath, dataBuffer);
             recordAssetBuffer(entryPath, dataBuffer);
+            addedAssets.add(entryPath);
           } catch (e) { console.error('Failed to add asset to zip:', k, e); }
         }
       }
+    }
+    // 追加漏れがないようにキャッシュディレクトリのファイルも取り込む
+    try {
+      const cacheDir = await ensureAssetCacheDir();
+      for (const [, virtualPath] of assetHashToEntry.entries()) {
+        const base = path.posix.basename(virtualPath);
+        const entryPath = toAssetEntryPath(virtualPath);
+        if (addedAssets.has(entryPath)) continue;
+        const filePath = path.join(cacheDir, base);
+        try {
+          const buf = await fs.readFile(filePath);
+          zip.addFile(entryPath, buf);
+          recordAssetBuffer(entryPath, buf);
+          addedAssets.add(entryPath);
+        } catch (e) {
+          console.error('Failed to add cached asset', filePath, e);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to read cache dir', e);
     }
     if (extractedAssets.length > 0) {
       extractedAssets.forEach(({ filename, buffer }) => {
