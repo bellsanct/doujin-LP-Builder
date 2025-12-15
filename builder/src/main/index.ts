@@ -374,26 +374,39 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
 
     const assets = (template as any).assets;
-    if (Array.isArray(assets)) {
-      for (const a of assets as { filename: string; data: number[] }[]) {
-        if (!a?.filename) continue;
-        try {
-          const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
-          const entryPath = toAssetEntryPath(a.filename);
-          zip.addFile(entryPath, dataBuffer);
-          recordAssetBuffer(entryPath, dataBuffer);
-        } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
-      }
-    } else if (assets && typeof assets === 'object') {
-      for (const k of Object.keys(assets)) {
-        const data = (assets as any)[k];
-        if (!data) continue;
-        try {
-          const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
-          const entryPath = toAssetEntryPath(k);
-          zip.addFile(entryPath, dataBuffer);
-          recordAssetBuffer(entryPath, dataBuffer);
-        } catch (e) { console.error('Failed to add asset to zip:', k, e); }
+    if (assets) {
+      if (typeof (assets as any).forEach === 'function' && typeof (assets as any).size === 'number') {
+        // Map
+        (assets as Map<string, any>).forEach((data: any, filename: string) => {
+          if (!filename) return;
+          try {
+            const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+            const entryPath = toAssetEntryPath(filename);
+            zip.addFile(entryPath, dataBuffer);
+            recordAssetBuffer(entryPath, dataBuffer);
+          } catch (e) { console.error('Failed to add asset to zip:', filename, e); }
+        });
+      } else if (Array.isArray(assets)) {
+        for (const a of assets as { filename: string; data: number[] }[]) {
+          if (!a?.filename) continue;
+          try {
+            const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
+            const entryPath = toAssetEntryPath(a.filename);
+            zip.addFile(entryPath, dataBuffer);
+            recordAssetBuffer(entryPath, dataBuffer);
+          } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
+        }
+      } else if (typeof assets === 'object') {
+        for (const k of Object.keys(assets)) {
+          const data = (assets as any)[k];
+          if (!data) continue;
+          try {
+            const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+            const entryPath = toAssetEntryPath(k);
+            zip.addFile(entryPath, dataBuffer);
+            recordAssetBuffer(entryPath, dataBuffer);
+          } catch (e) { console.error('Failed to add asset to zip:', k, e); }
+        }
       }
     }
     if (extractedAssets.length > 0) {

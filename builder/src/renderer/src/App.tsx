@@ -49,7 +49,16 @@ function AppContent() {
           data: Array.from(bytes),
           mime,
         });
-        return cached?.virtualPath || dataUrl;
+        const virtual = cached?.virtualPath || dataUrl;
+        if (virtual && selectedTemplate?.assets instanceof Map) {
+          setSelectedTemplate(prev => {
+            if (!prev) return prev;
+            const nextAssets = new Map(prev.assets);
+            nextAssets.set(virtual, bytes);
+            return { ...prev, assets: nextAssets } as any;
+          });
+        }
+        return virtual;
       }
       return dataUrl;
     } catch (e) {
