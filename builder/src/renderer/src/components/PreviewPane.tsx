@@ -16,6 +16,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
+  const blobUrlsRef = useRef<string[]>([]);
 
   // 繧､繝ｳ繧ｿ繝ｩ繧ｯ繝・ぅ繝也ｷｨ髮・ｩ溯・縺ｮ繧ｻ繝・ヨ繧｢繝・・
   const setupInteractiveEditing = useCallback((doc: Document) => {
@@ -282,39 +283,39 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
 
     const doRender = () => {
       try {
-      // 繧｢繧ｻ繝・ヨ繧奪ata URL縺ｫ螟画鋤縺吶ｋ髢｢謨ｰ
-      const convertAssetsToDataUrls = (content: string): string => {
+      // アセットをBlob URLに変換（data URL化しない）
+      const convertAssetsToUrls = (content: string): string => {
+        if (!content) return content;
         let result = content;
-
-        if (template.assets && template.assets.size > 0) {
-          template.assets.forEach((buffer: Uint8Array, filename: string) => {
-            // 繝輔ぃ繧､繝ｫ諡｡蠑ｵ蟄舌°繧窺IME繧ｿ繧､繝励ｒ謗ｨ貂ｬ
-            const ext = filename.split('.').pop()?.toLowerCase();
-            const mimeTypes: Record<string, string> = {
-              'png': 'image/png',
-              'jpg': 'image/jpeg',
-              'jpeg': 'image/jpeg',
-              'gif': 'image/gif',
-              'svg': 'image/svg+xml',
-              'webp': 'image/webp',
-              'ico': 'image/x-icon',
-            };
-
-            const mimeType = mimeTypes[ext || ''] || 'application/octet-stream';
-
-            // Buffer繧達ase64縺ｫ螟画鋤
-            const base64 = btoa(
-              Array.from(buffer)
-                .map(byte => String.fromCharCode(byte))
-                .join('')
-            );
-
-            const dataUrl = `data:${mimeType};base64,${base64}`;
-
-            // 繝輔ぃ繧､繝ｫ蜷阪・蜿ら・繧奪ata URL縺ｫ鄂ｮ謠・            result = result.replace(new RegExp(filename, 'g'), dataUrl);
-          });
+        const mimeTypes: Record<string, string> = {
+          'png': 'image/png',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'gif': 'image/gif',
+          'svg': 'image/svg+xml',
+          'webp': 'image/webp',
+          'ico': 'image/x-icon',
+        };
+        if (template.assets && (template.assets as any).forEach) {
+          const created: string[] = [];
+          try {
+            (template.assets as Map<string, Uint8Array>).forEach((buffer: Uint8Array, filename: string) => {
+              const ext = filename.split('.').pop()?.toLowerCase();
+              const mimeType = mimeTypes[ext || ''] || 'application/octet-stream';
+              try {
+                const blob = new Blob([buffer], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                created.push(url);
+                const escaped = filename.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+                result = result.replace(new RegExp(escaped, 'g'), url);
+              } catch (e) {
+                console.error('Failed to create blob URL for asset', filename, e);
+              }
+            });
+          } finally {
+            blobUrlsRef.current.push(...created);
+          }
         }
-
         return result;
       };
 
@@ -337,8 +338,8 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
         throw renderError;
       }
 
-      // 繧｢繧ｻ繝・ヨ繧奪ata URL縺ｫ螟画鋤
-      html = convertAssetsToDataUrls(html);
+      // アセット参照をBlob URLに変換
+      html = convertAssetsToUrls(html);
 
       if (!html || html.trim().length === 0) {
         console.warn('笞・・[PreviewPane] Generated HTML is empty!');
@@ -346,8 +347,8 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
         console.warn('Template snippet:', template.template?.substring(0, 500));
       }
 
-      // CSS繧ゅい繧ｻ繝・ヨ蜿ら・繧貞､画鋤
-      const styles = convertAssetsToDataUrls(template.styles);
+      // CSSもアセット参照を変換
+      const styles = convertAssetsToUrls(template.styles);
 
       // iframe縺ｫ譖ｸ縺崎ｾｼ縺ｿ
       const iframe = iframeRef.current;

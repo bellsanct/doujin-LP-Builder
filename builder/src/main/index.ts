@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, Menu, safeStorage } from 'e
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
+import { pathToFileURL } from 'url';
 import AdmZip from 'adm-zip';
 import { loadTemplate, validateTemplateFile } from './templateLoader';
 import { logger } from './logger';
@@ -11,10 +12,20 @@ import { getMainTranslations, Language } from './i18n';
 
 let mainWindow: BrowserWindow | null = null;
 let currentLanguage: Language = 'ja';
+let assetCacheDir: string | null = null;
+const assetHashToEntry = new Map<string, string>();
 
 const ensureZipPath = (filePath: string): string => {
   if (!filePath) return filePath;
   return filePath.toLowerCase().endsWith('.zip') ? filePath : `${filePath}.zip`;
+};
+
+const ensureAssetCacheDir = async (): Promise<string> => {
+  if (assetCacheDir) return assetCacheDir;
+  const dir = path.join(app.getPath('userData'), 'assets-cache');
+  await fs.mkdir(dir, { recursive: true });
+  assetCacheDir = dir;
+  return dir;
 };
 
 function createApplicationMenu() {
@@ -216,6 +227,30 @@ ipcMain.handle('read-file-base64', async (_e, filePath: string) => (await fs.rea
 ipcMain.handle('write-file', async (_e, filePath: string, content: string) => { await fs.writeFile(filePath, content, 'utf8'); return true; });
 ipcMain.handle('create-directory', async (_e, dirPath: string) => { await fs.mkdir(dirPath, { recursive: true }); return true; });
 ipcMain.handle('copy-file', async (_e, src: string, dest: string) => { await fs.copyFile(src, dest); return true; });
+ipcMain.handle('cache-asset-buffer', async (_e, payload: { filename?: string; data: number[]; mime?: string }) => {
+  if (!payload?.data || !Array.isArray(payload.data)) throw new Error('invalid payload');
+  const dir = await ensureAssetCacheDir();
+  const buf = Buffer.from(payload.data);
+  const hash = crypto.createHash('sha256').update(buf).digest('hex');
+  const mime = String(payload.mime || '').toLowerCase();
+  const extFromMime: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/gif': 'gif',
+    'image/svg+xml': 'svg',
+    'image/webp': 'webp',
+    'image/x-icon': 'ico'
+  };
+  const extFromName = (payload.filename || '').split('.').pop() || '';
+  const ext = extFromMime[mime] || extFromMime[mime.split(';')[0]] || extFromName || 'bin';
+  const filename = `${hash}.${ext}`;
+  const filePath = path.join(dir, filename);
+  try { await fs.access(filePath); } catch { await fs.writeFile(filePath, buf); }
+  const virtualPath = path.posix.join('assets', filename);
+  assetHashToEntry.set(hash, virtualPath);
+  return { filePath, fileUrl: pathToFileURL(filePath).href, virtualPath, hash };
+});
 
 ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildResult> => {
   try {
@@ -251,10 +286,13 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
 
     // assets の内容をハッシュ化して、data URL から逆引きできるように準備
     const assetBufferMap = new Map<string, { filename: string; buffer: Buffer }>();
+    const hashBuffer = (buf: Buffer) => crypto.createHash('sha256').update(buf).digest('hex');
     const recordAssetBuffer = (filename: string, buf: Buffer) => {
       try {
-        const hash = crypto.createHash('sha256').update(buf).digest('hex');
-        assetBufferMap.set(hash, { filename, buffer: buf });
+        const entryPath = toAssetEntryPath(filename);
+        const hash = hashBuffer(buf);
+        assetBufferMap.set(hash, { filename: entryPath, buffer: buf });
+        assetHashToEntry.set(hash, entryPath);
       } catch (e) { console.error('Failed to hash asset buffer', filename, e); }
     };
 
@@ -290,40 +328,38 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     };
 
     const extractedAssets: { filename: string; buffer: Buffer }[] = [];
-    let inlineAssetCounter = 0;
     const seenInline = new Map<string, string>();
+    const decodeBase64Safe = (b64: string): Buffer => {
+      const cleaned = String(b64 || '').replace(/\s+/g, '');
+      const padded = cleaned.length % 4 === 0 ? cleaned : cleaned + '='.repeat((4 - (cleaned.length % 4)) % 4);
+      return Buffer.from(padded, 'base64');
+    };
+    const getExtFromMime = (mimeLower: string) => mimeExtMap[mimeLower] || mimeExtMap[mimeLower.split(';')[0]] || 'bin';
     const extractDataUrls = (content: string, kind: 'html'|'css'): string => {
       if (!content) return content;
-      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+/=]+)(?=["')])/g;
+      const dataUrlRegex = /data:([^;]+);base64,([A-Za-z0-9+\/=_\-\s]+?)(?=["'\)\s]|$)/g;
       return content.replace(dataUrlRegex, (_m, mime, base64) => {
-        const mimeLower = String(mime || '').toLowerCase();
-        const key = `${mimeLower}:${base64.substring(0, 32)}`;
-        let filename = seenInline.get(key);
-        if (filename) return filename;
-
+        const mimeLower = String(mime || '').toLowerCase().trim();
         let buffer: Buffer | null = null;
-        try { buffer = Buffer.from(base64, 'base64'); } catch (e) { console.error('Failed to decode data URL', e); }
+        try { buffer = decodeBase64Safe(base64); } catch (e) {
+          console.error('Failed to decode data URL', e);
+          throw new Error('データURLのデコードに失敗しました');
+        }
+        if (!buffer) throw new Error('データURLのデコードに失敗しました');
 
-        // 既存の assets とハッシュ照合してファイル名を復元
-        if (buffer) {
-          const hash = crypto.createHash('sha256').update(buffer).digest('hex');
-          const match = assetBufferMap.get(hash);
-          if (match) {
-            filename = toAssetEntryPath(match.filename);
-            seenInline.set(key, filename);
-            return filename;
-          }
+        const hash = hashBuffer(buffer);
+        const cachedPath = assetHashToEntry.get(hash) || assetBufferMap.get(hash)?.filename;
+        if (cachedPath) {
+          seenInline.set(hash, cachedPath);
+          return cachedPath;
         }
 
-        // 見つからない場合は inline 付与で新規に出力
-        inlineAssetCounter += 1;
-        const ext = mimeExtMap[mimeLower] || 'bin';
-        filename = `assets/inline-${kind}-${inlineAssetCounter}.${ext}`;
-        seenInline.set(key, filename);
-        if (buffer) {
-          try { extractedAssets.push({ filename, buffer }); } catch (e) { console.error('Failed to store inline asset', e); }
-        }
-        return filename;
+        const ext = getExtFromMime(mimeLower);
+        const entryPath = toAssetEntryPath(`${hash}.${ext}`);
+        extractedAssets.push({ filename: entryPath, buffer });
+        assetHashToEntry.set(hash, entryPath);
+        assetBufferMap.set(hash, { filename: entryPath, buffer });
+        return entryPath;
       });
     };
 
@@ -338,27 +374,64 @@ ipcMain.handle('build-lp', async (_event, options: BuildRequest): Promise<BuildR
     if (template.scripts) zip.addFile('script.js', Buffer.from(template.scripts, 'utf-8'));
 
     const assets = (template as any).assets;
-    if (Array.isArray(assets)) {
-      for (const a of assets as { filename: string; data: number[] }[]) {
-        if (!a?.filename) continue;
-        try {
-          const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
-          const entryPath = toAssetEntryPath(a.filename);
-          zip.addFile(entryPath, dataBuffer);
-          recordAssetBuffer(entryPath, dataBuffer);
-        } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
+    const addedAssets = new Set<string>();
+    if (assets) {
+      if (typeof (assets as any).forEach === 'function' && typeof (assets as any).size === 'number') {
+        // Map
+        (assets as Map<string, any>).forEach((data: any, filename: string) => {
+          if (!filename) return;
+          try {
+            const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+            const entryPath = toAssetEntryPath(filename);
+            zip.addFile(entryPath, dataBuffer);
+            recordAssetBuffer(entryPath, dataBuffer);
+            addedAssets.add(entryPath);
+          } catch (e) { console.error('Failed to add asset to zip:', filename, e); }
+        });
+      } else if (Array.isArray(assets)) {
+        for (const a of assets as { filename: string; data: number[] }[]) {
+          if (!a?.filename) continue;
+          try {
+            const dataBuffer = Array.isArray(a.data) ? Buffer.from(a.data) : Buffer.from(a.data ?? []);
+            const entryPath = toAssetEntryPath(a.filename);
+            zip.addFile(entryPath, dataBuffer);
+            recordAssetBuffer(entryPath, dataBuffer);
+            addedAssets.add(entryPath);
+          } catch (e) { console.error('Failed to add asset to zip:', a?.filename, e); }
+        }
+      } else if (typeof assets === 'object') {
+        for (const k of Object.keys(assets)) {
+          const data = (assets as any)[k];
+          if (!data) continue;
+          try {
+            const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
+            const entryPath = toAssetEntryPath(k);
+            zip.addFile(entryPath, dataBuffer);
+            recordAssetBuffer(entryPath, dataBuffer);
+            addedAssets.add(entryPath);
+          } catch (e) { console.error('Failed to add asset to zip:', k, e); }
+        }
       }
-    } else if (assets && typeof assets === 'object') {
-      for (const k of Object.keys(assets)) {
-        const data = (assets as any)[k];
-        if (!data) continue;
+    }
+    // 追加漏れがないようにキャッシュディレクトリのファイルも取り込む
+    try {
+      const cacheDir = await ensureAssetCacheDir();
+      for (const [, virtualPath] of assetHashToEntry.entries()) {
+        const base = path.posix.basename(virtualPath);
+        const entryPath = toAssetEntryPath(virtualPath);
+        if (addedAssets.has(entryPath)) continue;
+        const filePath = path.join(cacheDir, base);
         try {
-          const dataBuffer = Array.isArray(data) ? Buffer.from(data) : Buffer.from((data as any).data ?? data);
-          const entryPath = toAssetEntryPath(k);
-          zip.addFile(entryPath, dataBuffer);
-          recordAssetBuffer(entryPath, dataBuffer);
-        } catch (e) { console.error('Failed to add asset to zip:', k, e); }
+          const buf = await fs.readFile(filePath);
+          zip.addFile(entryPath, buf);
+          recordAssetBuffer(entryPath, buf);
+          addedAssets.add(entryPath);
+        } catch (e) {
+          console.error('Failed to add cached asset', filePath, e);
+        }
       }
+    } catch (e) {
+      console.error('Failed to read cache dir', e);
     }
     if (extractedAssets.length > 0) {
       extractedAssets.forEach(({ filename, buffer }) => {

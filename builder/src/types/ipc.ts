@@ -42,6 +42,7 @@ export interface ElectronAPI {
   writeFile: (filePath: string, content: string) => Promise<boolean>;
   createDirectory: (dirPath: string) => Promise<boolean>;
   copyFile: (src: string, dest: string) => Promise<boolean>;
+  cacheAssetBuffer: (payload: { filename?: string; data: number[]; mime?: string }) => Promise<{ filePath: string; fileUrl: string; virtualPath: string; hash: string }>;
   buildLP: (options: BuildRequest) => Promise<BuildResult>;
   log: LoggerAPI;
   onMenuEvent: (channel: string, callback: () => void) => () => void;
