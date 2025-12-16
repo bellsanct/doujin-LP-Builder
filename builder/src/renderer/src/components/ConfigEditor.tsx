@@ -8,13 +8,14 @@ interface ConfigEditorProps {
   config: any;
   onChange: (config: any) => void;
   focusedFieldId?: string | null;
+  assetPreviewMap?: Map<string, string>;
 }
 
 export interface ConfigEditorRef {
   scrollToField: (fieldId: string) => void;
 }
 
-const ConfigEditor = forwardRef<ConfigEditorRef, ConfigEditorProps>(({ schema, config, onChange, focusedFieldId }, ref) => {
+const ConfigEditor = forwardRef<ConfigEditorRef, ConfigEditorProps>(({ schema, config, onChange, focusedFieldId, assetPreviewMap }, ref) => {
   // スキーマ形式を判定
   const isFormSchema = schema.formSchema && schema.formSchema.sections;
 
@@ -533,6 +534,7 @@ const ConfigEditor = forwardRef<ConfigEditorRef, ConfigEditorProps>(({ schema, c
 
       case 'image':
         const previewHeight = imagePreviewHeights.get(field.id) || 200;
+        const previewSrc = (value && typeof value === 'string' && assetPreviewMap?.get(value)) || value;
         inputElement = (
           <div className="form-image-upload">
             {value && (
@@ -540,7 +542,7 @@ const ConfigEditor = forwardRef<ConfigEditorRef, ConfigEditorProps>(({ schema, c
                 className="image-upload-preview"
                 style={{ height: `${previewHeight}px` }}
               >
-                <img src={value} alt="Preview" className="image-preview" />
+                <img src={previewSrc || ''} alt="Preview" className="image-preview" />
                 <div
                   className="image-resize-handle"
                   onMouseDown={(e) => handleImageResize(field.id, e)}

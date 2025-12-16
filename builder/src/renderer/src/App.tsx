@@ -29,6 +29,7 @@ function AppContent() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateArchive | null>(null);
   const [config, setConfig] = useState<UserConfig | null>(null);
   const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null);
+  const [assetPreviewMap, setAssetPreviewMap] = useState<Map<string, string>>(new Map());
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const templateOpenerRef = useRef<TemplateOpenerRef>(null);
   const configEditorRef = useRef<ConfigEditorRef | null>(null);
@@ -36,7 +37,8 @@ function AppContent() {
   const cacheDataUrlToVirtualPath = async (
     dataUrl: string,
     hintExt: string | undefined,
-    pendingAssets: Map<string, Uint8Array>
+    pendingAssets: Map<string, Uint8Array>,
+    previewMap: Map<string, string>
   ): Promise<string> => {
     if (!dataUrl?.startsWith('data:')) return dataUrl;
     const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -55,6 +57,13 @@ function AppContent() {
         });
         const virtual = cached?.virtualPath || dataUrl;
         pendingAssets.set(virtual, bytes);
+        try {
+          const blob = new Blob([bytes], { type: mime });
+          const url = URL.createObjectURL(blob);
+          previewMap.set(virtual, url);
+        } catch (e) {
+          console.error('Failed to create preview blob URL', e);
+        }
         return virtual;
       }
       return dataUrl;
@@ -64,20 +73,24 @@ function AppContent() {
     }
   };
 
-  const normalizeConfigAssets = async (value: any, pendingAssets: Map<string, Uint8Array>): Promise<any> => {
+  const normalizeConfigAssets = async (
+    value: any,
+    pendingAssets: Map<string, Uint8Array>,
+    previewMap: Map<string, string>
+  ): Promise<any> => {
     if (typeof value === 'string') {
       if (value.startsWith('data:')) {
         const ext = value.split(';')[0].split('/').pop();
-        return cacheDataUrlToVirtualPath(value, ext, pendingAssets);
+        return cacheDataUrlToVirtualPath(value, ext, pendingAssets, previewMap);
       }
       return value;
     }
     if (Array.isArray(value)) {
-      return Promise.all(value.map((v) => normalizeConfigAssets(v, pendingAssets)));
+      return Promise.all(value.map((v) => normalizeConfigAssets(v, pendingAssets, previewMap)));
     }
     if (value && typeof value === 'object') {
       const entries = await Promise.all(
-        Object.entries(value).map(async ([k, v]) => [k, await normalizeConfigAssets(v, pendingAssets)])
+        Object.entries(value).map(async ([k, v]) => [k, await normalizeConfigAssets(v, pendingAssets, previewMap)])
       );
       return Object.fromEntries(entries);
     }
@@ -115,7 +128,8 @@ function AppContent() {
 
     const initialConfig = template.userConfig || template.defaultConfig;
     const pendingAssets = new Map<string, Uint8Array>();
-    const normalized = await normalizeConfigAssets(initialConfig, pendingAssets);
+    const previewMap = new Map<string, string>();
+    const normalized = await normalizeConfigAssets(initialConfig, pendingAssets, previewMap);
 
     if (pendingAssets.size > 0) {
       const nextAssets = new Map(template.assets as Map<string, Uint8Array>);
@@ -124,6 +138,7 @@ function AppContent() {
     } else {
       setSelectedTemplate(template);
     }
+    if (previewMap.size > 0) setAssetPreviewMap(previewMap);
     setConfig(normalized);
   };
 
@@ -159,7 +174,8 @@ function AppContent() {
     }
     // data URL をビルド前にキャッシュ化してパス参照へ
     const pendingAssets = new Map<string, Uint8Array>();
-    const normalizedConfig = await normalizeConfigAssets(config, pendingAssets);
+    const previewMap = new Map<string, string>();
+    const normalizedConfig = await normalizeConfigAssets(config, pendingAssets, previewMap);
     if (pendingAssets.size > 0) {
       setSelectedTemplate(prev => {
         if (!prev) return prev;
@@ -168,6 +184,7 @@ function AppContent() {
         return { ...(prev as any), assets: nextAssets };
       });
     }
+    if (previewMap.size > 0) setAssetPreviewMap(previewMap);
     setConfig(normalizedConfig);
 
     const serializeAssets = (assets: any): { filename: string; data: number[] }[] => {
@@ -298,6 +315,7 @@ function AppContent() {
                 config={config}
                 onChange={handleConfigChange}
                 focusedFieldId={focusedFieldId}
+                assetPreviewMap={assetPreviewMap}
               />
 
               <div className="editor-preview">
