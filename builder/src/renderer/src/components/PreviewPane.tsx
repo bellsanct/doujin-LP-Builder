@@ -16,6 +16,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ template, config, onFieldFocu
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
+  const blobUrlsRef = useRef<string[]>([]);
 
   // 繧､繝ｳ繧ｿ繝ｩ繧ｯ繝・ぅ繝也ｷｨ髮・ｩ溯・縺ｮ繧ｻ繝・ヨ繧｢繝・・
   const setupInteractiveEditing = useCallback((doc: Document) => {
