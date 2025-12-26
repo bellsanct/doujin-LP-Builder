@@ -18,7 +18,8 @@
       "Bash(npx tsc:*)",
       "Bash(git remote:*)",
       "Bash(unzip:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

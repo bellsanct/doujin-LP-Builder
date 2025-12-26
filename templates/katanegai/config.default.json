@@ -1,0 +1,40 @@
+{
+  "siteTitle": "カガネガイ 音楽集 - Original Soundtrack",
+  "siteName": "Katanegai Project",
+  "siteUrl": "",
+  "seoDescription": "透明感と和風の空気が交差する、カガネガイの世界を彩る旋律の集成。",
+  "ogpImage": "",
+  "primaryColor": "#fcfcfc",
+  "secondaryColor": "#2d2d2d",
+  "accentColor": "#a62c2c",
+  "heroImage": "",
+  "heroPositionX": 50,
+  "heroPositionY": 50,
+  "heroPositionX_mobile": 50,
+  "heroPositionY_mobile": 25,
+  "overlayColor": "#ffffff",
+  "overlayOpacity": 20,
+  "heroTitle": "カガネガイ 音楽集",
+  "heroSubtitle": "Original Soundtrack & Concept Album",
+  "aboutTitle": "Introduction",
+  "aboutText": "淡い光のなかで、静かに語られる記憶の断片。\n透明な音色が織りなす幻想的な物語を、あなたに。",
+  "jacketImage": "",
+  "albumTitle": "カガネガイ 音楽集",
+  "artistName": "Katanegai Official",
+  "releaseInfo": [
+    { "label": "Event", "value": "M3-2025 Autumn" },
+    { "label": "Price", "value": "¥2,000 (Event)" }
+  ],
+  "tracks": [
+    { "trackNumber": "01", "title": "序曲：カガネガイ", "artist": "Composer A", "duration": "2:45" },
+    { "trackNumber": "02", "title": "紅葉の舞う庭で", "artist": "Composer B", "duration": "4:12" }
+  ],
+  "credits": [
+    { "role": "Music", "name": "Composer A / B", "link1Label": "Twitter", "link1Url": "#" },
+    { "role": "Illustration", "name": "Illustrator Name", "link1Label": "Portfolio", "link1Url": "#" }
+  ],
+  "shopLinks": [
+    { "label": "BOOTH", "url": "#" }
+  ],
+  "footerCopyright": "© katanegai project"
+}

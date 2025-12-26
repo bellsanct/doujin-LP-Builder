@@ -1,0 +1,347 @@
+/* ==========================================
+   ブロックエディター - 3ペイン構造
+   ========================================== */
+
+.block-editor {
+  display: grid;
+  grid-template-columns: 260px 1fr 320px;
+  height: 100%;
+  background: #f5f5f5;
+  gap: 1px;
+}
+
+/* ==========================================
+   左パネル: ブロックパレット
+   ========================================== */
+
+.block-palette {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.palette-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.palette-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.palette-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.palette-category {
+  margin-bottom: 0.25rem;
+}
+
+.category-header {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+  transition: background-color 0.2s;
+}
+
+.category-header:hover {
+  background: #f5f5f5;
+}
+
+.category-icon {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.category-blocks {
+  padding: 0.25rem 0;
+}
+
+.block-item {
+  width: 100%;
+  padding: 0.7rem 1rem 0.7rem 2.5rem;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #444;
+  transition: background-color 0.2s;
+  text-align: left;
+}
+
+.block-item:hover {
+  background: #f0f7ff;
+  color: #0066cc;
+}
+
+.block-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.block-label {
+  flex: 1;
+}
+
+/* ==========================================
+   中央: キャンバス
+   ========================================== */
+
+.block-canvas {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvas-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.canvas-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.canvas-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #f9f9f9;
+}
+
+.canvas-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.canvas-block {
+  position: relative;
+  margin-bottom: 2px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.canvas-block:hover {
+  box-shadow: 0 0 0 2px #ccc inset;
+}
+
+.canvas-block.selected {
+  box-shadow: 0 0 0 3px #0066cc inset;
+}
+
+.block-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.canvas-block:hover .block-controls,
+.canvas-block.selected .block-controls {
+  opacity: 1;
+}
+
+.block-type-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.btn-delete {
+  padding: 0.3rem 0.6rem;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+  background: #cc0000;
+}
+
+.block-preview {
+  pointer-events: none;
+}
+
+/* ==========================================
+   右パネル: 設定パネル
+   ========================================== */
+
+.block-settings {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.settings-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.settings-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.block-settings-form h4 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.setting-field {
+  margin-bottom: 1rem;
+}
+
+.setting-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.setting-field input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.setting-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.setting-section h5 {
+  margin: 0 0 0.8rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================
+   スクロールバースタイル
+   ========================================== */
+
+.palette-content::-webkit-scrollbar,
+.canvas-content::-webkit-scrollbar,
+.settings-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.palette-content::-webkit-scrollbar-track,
+.canvas-content::-webkit-scrollbar-track,
+.settings-content::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.palette-content::-webkit-scrollbar-thumb,
+.canvas-content::-webkit-scrollbar-thumb,
+.settings-content::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.palette-content::-webkit-scrollbar-thumb:hover,
+.canvas-content::-webkit-scrollbar-thumb:hover,
+.settings-content::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ==========================================
+   レスポンシブ
+   ========================================== */
+
+@media (max-width: 1200px) {
+  .block-editor {
+    grid-template-columns: 220px 1fr 280px;
+  }
+}
+
+@media (max-width: 900px) {
+  .block-editor {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .block-palette {
+    max-height: 200px;
+  }
+
+  .block-settings {
+    display: none;
+  }
+}

@@ -1,0 +1,504 @@
+/**
+ * katanegai テンプレート - ブロックベーススタイル
+ * シンプルで美しい同人音楽作品向けLP
+ */
+
+/* ==========================================
+   グローバルスタイル
+   ========================================== */
+
+.template-katanegai {
+  --font-heading: 'Noto Serif JP', serif;
+  --font-body: 'Noto Serif JP', serif;
+  --transition-speed: 0.3s;
+}
+
+.template-katanegai body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background, #fcfcfc);
+  color: var(--color-text, #2d2d2d);
+  font-family: var(--font-body);
+  font-weight: 300;
+  line-height: 1.8;
+  font-size: var(--font-size-base, 16px);
+  -webkit-font-smoothing: antialiased;
+}
+
+.template-katanegai a {
+  text-decoration: none;
+  color: inherit;
+  transition: opacity var(--transition-speed) ease, color var(--transition-speed) ease;
+}
+
+.template-katanegai a:hover {
+  opacity: 0.7;
+}
+
+/* ==========================================
+   共通ブロックスタイル
+   ========================================== */
+
+.template-katanegai .block {
+  position: relative;
+}
+
+.template-katanegai .block-container {
+  max-width: var(--layout-max-width, 1000px);
+  margin: 0 auto;
+  padding: 0 var(--layout-gutter, 2rem);
+}
+
+/* ==========================================
+   Hero Block
+   ========================================== */
+
+.template-katanegai .block-hero {
+  position: relative;
+  width: 100%;
+  height: var(--hero-height, 100vh);
+  min-height: 700px;
+  background-size: var(--hero-bg-size, cover);
+  background-position: var(--hero-pos-x, 50%) var(--hero-pos-y, 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: #f0f0f0;
+}
+
+.template-katanegai .block-hero .hero-background {
+  position: absolute;
+  inset: 0;
+  background-size: inherit;
+  background-position: inherit;
+  z-index: 0;
+}
+
+.template-katanegai .block-hero .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: var(--hero-overlay-color, #ffffff);
+  opacity: var(--hero-overlay-opacity, 0.2);
+  z-index: 1;
+}
+
+.template-katanegai .block-hero .hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 2rem;
+}
+
+.template-katanegai .block-hero .hero-title {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.template-katanegai .block-hero .hero-subtitle {
+  font-size: clamp(1rem, 3vw, 1.2rem);
+  letter-spacing: 0.3em;
+  margin-top: 1.5rem;
+  opacity: 0.8;
+}
+
+.template-katanegai .block-hero .hero-cta {
+  display: inline-block;
+  margin-top: 2rem;
+  padding: 1rem 2.5rem;
+  background-color: var(--color-accent, #a62c2c);
+  color: #fff;
+  border-radius: 2px;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  transition: transform 0.2s ease;
+}
+
+.template-katanegai .block-hero .hero-cta:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+/* ==========================================
+   Text Block
+   ========================================== */
+
+.template-katanegai .block-text {
+  padding: var(--block-padding-y, 4rem) 0;
+}
+
+.template-katanegai .block-text .text-content {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: var(--text-font-size, 1.1rem);
+  line-height: var(--text-line-height, 1.8);
+}
+
+.template-katanegai .block-text.align-center .text-content {
+  text-align: center;
+}
+
+.template-katanegai .block-text.align-left .text-content {
+  text-align: left;
+}
+
+.template-katanegai .block-text.align-right .text-content {
+  text-align: right;
+}
+
+/* ==========================================
+   Heading Block
+   ========================================== */
+
+.template-katanegai .block-heading {
+  padding: var(--block-padding-y, 2rem) 0;
+  text-align: var(--heading-align, center);
+}
+
+.template-katanegai .block-heading h1,
+.template-katanegai .block-heading h2,
+.template-katanegai .block-heading h3,
+.template-katanegai .block-heading h4 {
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  margin: 0;
+  position: relative;
+  display: inline-block;
+}
+
+.template-katanegai .block-heading h2 {
+  font-size: 2rem;
+}
+
+.template-katanegai .block-heading .heading-line {
+  width: 40px;
+  height: 1px;
+  background-color: var(--color-accent, #a62c2c);
+  margin: 1rem auto 0;
+}
+
+/* ==========================================
+   Image Block
+   ========================================== */
+
+.template-katanegai .block-image {
+  padding: var(--block-padding-y, 2rem) 0;
+}
+
+.template-katanegai .block-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--image-border-radius, 0);
+}
+
+.template-katanegai .block-image .image-caption {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.6;
+  margin-top: 1rem;
+}
+
+/* ==========================================
+   Gallery Block
+   ========================================== */
+
+.template-katanegai .block-gallery {
+  padding: var(--block-padding-y, 4rem) 0;
+}
+
+.template-katanegai .block-gallery .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--gallery-columns, 3), 1fr);
+  gap: var(--gallery-gap, 1rem);
+}
+
+.template-katanegai .block-gallery .gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ==========================================
+   Tracklist Block
+   ========================================== */
+
+.template-katanegai .block-tracklist {
+  padding: var(--block-padding-y, 4rem) 0;
+}
+
+.template-katanegai .block-tracklist .track-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.template-katanegai .block-tracklist .track-row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.template-katanegai .block-tracklist .track-row:hover {
+  background-color: rgba(0, 0, 0, 0.01);
+}
+
+.template-katanegai .block-tracklist .track-num {
+  padding: 1.2rem 1rem;
+  font-size: 0.8rem;
+  opacity: 0.4;
+  width: 40px;
+}
+
+.template-katanegai .block-tracklist .track-main {
+  padding: 1.2rem 1rem;
+}
+
+.template-katanegai .block-tracklist .track-name {
+  font-weight: 500;
+}
+
+.template-katanegai .block-tracklist .track-artist {
+  font-size: 0.9rem;
+  opacity: 0.5;
+  margin-left: 0.5rem;
+}
+
+.template-katanegai .block-tracklist .track-time {
+  padding: 1.2rem 1rem;
+  text-align: right;
+  font-size: 0.8rem;
+  opacity: 0.4;
+}
+
+/* ==========================================
+   Credits Block
+   ========================================== */
+
+.template-katanegai .block-credits {
+  padding: var(--block-padding-y, 4rem) 0;
+}
+
+.template-katanegai .block-credits .credits-group {
+  margin-bottom: 3rem;
+}
+
+.template-katanegai .block-credits .credits-group:last-child {
+  margin-bottom: 0;
+}
+
+.template-katanegai .block-credits .credits-group-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  margin-bottom: 2rem;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.template-katanegai .block-credits .credits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--credits-gap, 2.5rem);
+}
+
+.template-katanegai .block-credits .credit-item {
+  border-left: 2px solid var(--color-accent, #a62c2c);
+  padding-left: 1.5rem;
+  transition: transform 0.2s ease;
+}
+
+.template-katanegai .block-credits .credit-item:hover {
+  transform: translateX(4px);
+}
+
+.template-katanegai .block-credits .credit-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 0.8rem;
+}
+
+.template-katanegai .block-credits .credit-role {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.template-katanegai .block-credits .credit-name {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0.2rem 0;
+}
+
+.template-katanegai .block-credits .credit-bio {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  margin-top: 0.5rem;
+}
+
+.template-katanegai .block-credits .credit-links {
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.template-katanegai .block-credits .credit-links a {
+  margin-right: 1rem;
+  color: var(--color-accent, #a62c2c);
+}
+
+/* ==========================================
+   Shop Links Block
+   ========================================== */
+
+.template-katanegai .block-shop-links {
+  padding: var(--block-padding-y, 3rem) 0;
+}
+
+.template-katanegai .block-shop-links .shop-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: var(--shop-align, center);
+}
+
+.template-katanegai .block-shop-links .btn-shop {
+  background-color: var(--color-accent, #a62c2c);
+  color: #fff;
+  padding: 0.8rem 2.5rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  transition: transform 0.2s ease, background-color var(--transition-speed) ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.template-katanegai .block-shop-links .btn-shop:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+/* ==========================================
+   Button Block
+   ========================================== */
+
+.template-katanegai .block-button {
+  padding: var(--block-padding-y, 2rem) 0;
+  text-align: var(--button-align, center);
+}
+
+.template-katanegai .block-button .btn {
+  display: inline-block;
+  padding: 0.8rem 2.5rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  transition: transform 0.2s ease;
+}
+
+.template-katanegai .block-button .btn-solid {
+  background-color: var(--color-accent, #a62c2c);
+  color: #fff;
+}
+
+.template-katanegai .block-button .btn-outline {
+  border: 2px solid var(--color-accent, #a62c2c);
+  color: var(--color-accent, #a62c2c);
+  background: transparent;
+}
+
+.template-katanegai .block-button .btn:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+/* ==========================================
+   Divider Block
+   ========================================== */
+
+.template-katanegai .block-divider {
+  padding: var(--block-padding-y, 2rem) 0;
+  text-align: center;
+}
+
+.template-katanegai .block-divider hr {
+  border: none;
+  border-top: var(--divider-thickness, 1px) var(--divider-style, solid) var(--divider-color, rgba(0, 0, 0, 0.1));
+  width: var(--divider-width, 100%);
+  margin: 0 auto;
+}
+
+/* ==========================================
+   Spacer Block
+   ========================================== */
+
+.template-katanegai .block-spacer {
+  height: var(--spacer-height, 40px);
+}
+
+/* ==========================================
+   Columns Block
+   ========================================== */
+
+.template-katanegai .block-columns {
+  padding: var(--block-padding-y, 2rem) 0;
+}
+
+.template-katanegai .block-columns .columns-container {
+  display: grid;
+  grid-template-columns: repeat(var(--columns-count, 2), 1fr);
+  gap: var(--columns-gap, 2rem);
+}
+
+/* ==========================================
+   Responsive
+   ========================================== */
+
+@media (max-width: 768px) {
+  .template-katanegai body {
+    font-size: 15px;
+  }
+
+  .template-katanegai .block-container {
+    padding: 0 1.5rem;
+  }
+
+  .template-katanegai .block-hero {
+    background-position: var(--hero-pos-x-mobile, 50%) var(--hero-pos-y-mobile, 50%) !important;
+  }
+
+  .template-katanegai .block-gallery .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .template-katanegai .block-credits .credits-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .template-katanegai .block-tracklist .track-time {
+    display: none;
+  }
+
+  .template-katanegai .block-shop-links .shop-buttons {
+    flex-direction: column;
+  }
+
+  .template-katanegai .block-shop-links .btn-shop {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .template-katanegai .block-columns .columns-container {
+    grid-template-columns: 1fr;
+  }
+}
