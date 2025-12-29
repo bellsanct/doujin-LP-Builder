@@ -1,0 +1,504 @@
+import React, { useState, useEffect, useRef } from 'react';
+import type { Project, Block } from '../../../types/block-system';
+import { blockRegistry } from '../../../blocks/registry';
+import './BlockPreview.css';
+
+interface BlockPreviewProps {
+  project: Project;
+  selectedBlockId: string | null;
+  onBlockSelect: (blockId: string | null) => void;
+}
+
+type DeviceSize = 'desktop' | 'tablet' | 'mobile';
+
+const DEVICE_WIDTHS = {
+  desktop: '100%',
+  tablet: '768px',
+  mobile: '375px',
+};
+
+/**
+ * ブロックをHTMLに変換する関数
+ */
+function blockToHTML(block: Block): string {
+  if (!block.visible) {
+    return '';
+  }
+
+  const content = block.content as any;
+  const settings = block.settings as any;
+  const isSelected = false; // iframeでは選択状態は扱わない
+
+  switch (block.type) {
+    case 'hero':
+      const overlayEnabled = settings.overlay?.enabled !== false;
+      const overlayColor = settings.overlay?.color || '#000000';
+      const overlayOpacity = settings.overlay?.opacity ?? 50;
+
+      // HEX色をRGBAに変換
+      const hexToRgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+      };
+
+      const rgb = hexToRgb(overlayColor);
+      const overlayStyle = overlayEnabled
+        ? `background-color: rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${overlayOpacity / 100});`
+        : 'display: none;';
+
+      return `
+        <section class="block block-hero" data-block-id="${block.id}" style="background-image: url('${content.backgroundImage || ''}');">
+          <div class="hero-overlay" style="${overlayStyle}"></div>
+          <div class="hero-content">
+            ${content.title ? `<h1 class="hero-title">${content.title}</h1>` : ''}
+            ${content.subtitle ? `<p class="hero-subtitle">${content.subtitle}</p>` : ''}
+          </div>
+        </section>
+      `;
+
+    case 'text':
+      const alignment = settings.alignment || 'left';
+      return `
+        <section class="block block-text" data-block-id="${block.id}">
+          <div class="block-container">
+            <p class="text-content" style="text-align: ${alignment};">${content.text || ''}</p>
+          </div>
+        </section>
+      `;
+
+    case 'heading':
+      const level = settings.level || 2;
+      return `
+        <section class="block block-heading" data-block-id="${block.id}">
+          <div class="block-container">
+            <h${level} class="heading-text">${content.text || ''}</h${level}>
+            <div class="heading-line"></div>
+          </div>
+        </section>
+      `;
+
+    case 'image':
+      return `
+        <section class="block block-image" data-block-id="${block.id}">
+          <div class="block-container">
+            <img src="${content.src || ''}" alt="${content.alt || ''}" />
+            ${content.caption ? `<p class="image-caption">${content.caption}</p>` : ''}
+          </div>
+        </section>
+      `;
+
+    case 'button':
+      return `
+        <section class="block block-button" data-block-id="${block.id}">
+          <div class="block-container">
+            <a href="${content.url || '#'}" class="btn btn-${settings.style || 'primary'}" ${settings.openInNewTab ? 'target="_blank" rel="noopener noreferrer"' : ''}>
+              ${content.text || 'ボタン'}
+            </a>
+          </div>
+        </section>
+      `;
+
+    case 'divider':
+      return `
+        <section class="block block-divider" data-block-id="${block.id}">
+          <div class="block-container">
+            <hr />
+          </div>
+        </section>
+      `;
+
+    case 'spacer':
+      return `
+        <div class="block block-spacer" data-block-id="${block.id}" style="height: ${settings.height || 40}px;"></div>
+      `;
+
+    case 'credits':
+      const groups = content.groups || [];
+      const groupsHTML = groups.map((group: any) => {
+        const itemsHTML = group.items.map((item: any) => `
+          <div class="credit-item">
+            ${settings.showAvatars && item.avatar ? `<img src="${item.avatar}" alt="${item.name}" class="credit-avatar" />` : ''}
+            <span class="credit-role">${item.role || ''}</span>
+            <span class="credit-name">${item.name || ''}</span>
+            ${settings.showBios && item.bio ? `<p class="credit-bio">${item.bio}</p>` : ''}
+            ${settings.showLinks && item.links && item.links.length > 0 ? `
+              <div class="credit-links">
+                ${item.links.map((link: any) => `
+                  <a href="${link.url || '#'}" target="_blank" rel="noopener noreferrer">
+                    ${link.label || ''}
+                  </a>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+
+        return `
+          <div class="credits-group">
+            ${group.title ? `<h3 class="credits-group-title">${group.title}</h3>` : ''}
+            <div class="credits-grid">
+              ${itemsHTML}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <section class="block block-credits" data-block-id="${block.id}">
+          <div class="block-container">
+            ${groupsHTML}
+          </div>
+        </section>
+      `;
+
+    case 'tracklist':
+      const tracks = content.tracks || [];
+      const tracksHTML = tracks.map((track: any, index: number) => `
+        <tr class="track-row">
+          <td class="track-num">${String(index + 1).padStart(2, '0')}</td>
+          <td class="track-main">
+            <span class="track-name">${track.title || ''}</span>
+            ${track.artist ? `<span class="track-artist"> / ${track.artist}</span>` : ''}
+          </td>
+          <td class="track-time">${track.duration || ''}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <section class="block block-tracklist" data-block-id="${block.id}">
+          <div class="block-container">
+            <table class="track-table">
+              ${tracksHTML}
+            </table>
+          </div>
+        </section>
+      `;
+
+    case 'release':
+      const releaseInfo = content.releaseInfo || [];
+      const releaseShopLinks = content.shopLinks || [];
+      const releaseLayout = settings.layout || 'side-by-side';
+      const jacketPosition = settings.jacketPosition || 'left';
+
+      const releaseInfoHTML = releaseInfo.map((info: any) => `
+        <div class="spec-row">
+          <dt>${info.label}</dt>
+          <dd>${info.value}</dd>
+        </div>
+      `).join('');
+
+      const releaseLinksHTML = releaseShopLinks.map((link: any) => `
+        <a href="${link.url || '#'}" class="btn-shop" target="_blank" rel="noopener noreferrer">${link.label || ''}</a>
+      `).join('');
+
+      return `
+        <section class="block block-release" data-block-id="${block.id}">
+          <div class="block-container">
+            <div class="release-layout ${releaseLayout === 'stacked' ? 'stacked' : ''} ${jacketPosition === 'right' ? 'jacket-right' : ''}">
+              <div class="jacket-area">
+                ${content.jacketImage ? `<img src="${content.jacketImage}" alt="${content.albumTitle || ''}" class="jacket-img">` : `<div class="jacket-placeholder"><span>${content.albumTitle || 'Album'}</span></div>`}
+              </div>
+              <div class="info-area">
+                <div class="info-header">
+                  <h2 class="album-title">${content.albumTitle || ''}</h2>
+                  ${content.artistName ? `<p class="artist-name">${content.artistName}</p>` : ''}
+                </div>
+                ${releaseInfo.length > 0 ? `<dl class="spec-list">${releaseInfoHTML}</dl>` : ''}
+                ${releaseShopLinks.length > 0 ? `<div class="shop-buttons">${releaseLinksHTML}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        </section>
+      `;
+
+    case 'shop-links':
+      const links = content.links || [];
+      const linksHTML = links.map((link: any) => `
+        <a href="${link.url || '#'}" class="btn-shop" target="_blank" rel="noopener noreferrer">
+          ${link.label || ''}
+        </a>
+      `).join('');
+
+      return `
+        <section class="block block-shop-links" data-block-id="${block.id}">
+          <div class="block-container">
+            <div class="shop-buttons">
+              ${linksHTML}
+            </div>
+          </div>
+        </section>
+      `;
+
+    case 'gallery':
+      const images = content.images || [];
+      const imagesHTML = images.map((img: any) => `
+        <div class="gallery-item">
+          <img src="${img.src || ''}" alt="${img.alt || ''}" />
+          ${img.caption ? `<p class="gallery-caption">${img.caption}</p>` : ''}
+        </div>
+      `).join('');
+
+      return `
+        <section class="block block-gallery" data-block-id="${block.id}">
+          <div class="block-container">
+            <div class="gallery-grid">
+              ${imagesHTML}
+            </div>
+          </div>
+        </section>
+      `;
+
+    case 'video':
+      return `
+        <section class="block block-video" data-block-id="${block.id}">
+          <div class="block-container">
+            ${content.url ? `
+              <div class="video-wrapper">
+                <iframe src="${content.url}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              </div>
+            ` : ''}
+          </div>
+        </section>
+      `;
+
+    case 'audio':
+      return `
+        <section class="block block-audio" data-block-id="${block.id}">
+          <div class="block-container">
+            ${content.url ? `<audio controls style="width: 100%;"><source src="${content.url}" /></audio>` : ''}
+          </div>
+        </section>
+      `;
+
+    case 'columns':
+      const childrenHTML = (block.children || []).map(childBlock => blockToHTML(childBlock)).join('');
+      return `
+        <section class="block block-columns" data-block-id="${block.id}">
+          <div class="block-container">
+            <div class="columns-container">
+              ${childrenHTML}
+            </div>
+          </div>
+        </section>
+      `;
+
+    case 'embed':
+      return `
+        <section class="block block-embed" data-block-id="${block.id}">
+          <div class="block-container">
+            ${content.html || ''}
+          </div>
+        </section>
+      `;
+
+    default:
+      return `
+        <div class="block block-unknown" data-block-id="${block.id}" style="padding: 2rem; background: #f0f0f0; text-align: center;">
+          <p>Unknown block type: ${block.type}</p>
+        </div>
+      `;
+  }
+}
+
+export const BlockPreview: React.FC<BlockPreviewProps> = ({ project, selectedBlockId, onBlockSelect }) => {
+  const [deviceSize, setDeviceSize] = useState<DeviceSize>('desktop');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // テンプレートCSSはプロジェクトに内包されているため、ファイル読み込み不要
+  const templateCSS = project.templateCSS || '/* No template CSS */';
+
+  // Debug log
+  useEffect(() => {
+    console.log(`[BlockPreview] Using embedded CSS, length: ${templateCSS.length}`);
+  }, [templateCSS]);
+
+  useEffect(() => {
+    if (!iframeRef.current) return;
+    if (!templateCSS) return; // CSSが読み込まれるまで待つ
+
+    const iframe = iframeRef.current;
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    // ブロックをHTMLに変換
+    const blocksHTML = project.blocks
+      .sort((a, b) => a.order - b.order)
+      .map(block => blockToHTML(block))
+      .join('\n');
+
+    // CSS変数を生成
+    const cssVariables = `
+      --primary-color: ${project.globalSettings.colors.primary};
+      --secondary-color: ${project.globalSettings.colors.secondary};
+      --accent-color: ${project.globalSettings.colors.accent};
+      --background-color: ${project.globalSettings.colors.background};
+      --text-color: ${project.globalSettings.colors.text};
+      --font-heading: ${project.globalSettings.typography.headingFont};
+      --font-body: ${project.globalSettings.typography.bodyFont};
+      --font-size-base: ${project.globalSettings.typography.baseSize}px;
+      --font-scale: ${project.globalSettings.typography.scale};
+      --max-width: ${project.globalSettings.layout.maxWidth}px;
+      --gutter: ${project.globalSettings.layout.gutter}px;
+    `;
+
+    // 完全なHTMLドキュメントを生成
+    const html = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      ${cssVariables}
+      font-family: var(--font-body);
+      font-size: var(--font-size-base);
+      color: var(--text-color);
+      background: var(--background-color);
+      line-height: 1.6;
+    }
+
+    .block-container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+    }
+
+    /* 選択状態のハイライト */
+    [data-block-id] {
+      position: relative;
+      transition: box-shadow 0.2s;
+    }
+
+    [data-block-id]:hover {
+      cursor: pointer;
+      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.3) inset;
+    }
+
+    [data-block-id].selected {
+      box-shadow: 0 0 0 3px #0066cc inset;
+    }
+
+    /* テンプレートCSS */
+    ${templateCSS}
+  </style>
+</head>
+<body class="template-${project.template}">
+  ${blocksHTML}
+
+  <script>
+    console.log('[iframe] Template:', '${project.template}');
+    console.log('[iframe] CSS loaded:', ${templateCSS.length > 0});
+    console.log('[iframe] Blocks count:', document.querySelectorAll('[data-block-id]').length);
+
+    // ブロッククリック時に親ウィンドウに通知
+    document.addEventListener('click', (e) => {
+      const blockElement = e.target.closest('[data-block-id]');
+      if (blockElement) {
+        const blockId = blockElement.getAttribute('data-block-id');
+        window.parent.postMessage({ type: 'block-select', blockId }, '*');
+      }
+    });
+
+    // 選択状態の更新を受け取る
+    window.addEventListener('message', (e) => {
+      if (e.data.type === 'update-selection') {
+        document.querySelectorAll('[data-block-id]').forEach(el => {
+          el.classList.remove('selected');
+        });
+        if (e.data.blockId) {
+          const selectedEl = document.querySelector(\`[data-block-id="\${e.data.blockId}"]\`);
+          if (selectedEl) {
+            selectedEl.classList.add('selected');
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+    `;
+
+    console.log(`[BlockPreview] Injecting HTML, template CSS length: ${templateCSS.length}`);
+
+    // iframeに書き込み
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    // 選択状態を更新
+    if (selectedBlockId) {
+      iframe.contentWindow?.postMessage({ type: 'update-selection', blockId: selectedBlockId }, '*');
+    }
+  }, [project, selectedBlockId]);
+
+  // iframe からのメッセージを受け取る
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data.type === 'block-select') {
+        onBlockSelect(e.data.blockId);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onBlockSelect]);
+
+  return (
+    <div className="block-preview">
+      <div className="preview-toolbar">
+        <div className="device-switcher">
+          <button
+            className={deviceSize === 'desktop' ? 'active' : ''}
+            onClick={() => setDeviceSize('desktop')}
+            title="デスクトップ"
+          >
+            🖥️ PC
+          </button>
+          <button
+            className={deviceSize === 'tablet' ? 'active' : ''}
+            onClick={() => setDeviceSize('tablet')}
+            title="タブレット"
+          >
+            📱 Tablet
+          </button>
+          <button
+            className={deviceSize === 'mobile' ? 'active' : ''}
+            onClick={() => setDeviceSize('mobile')}
+            title="モバイル"
+          >
+            📱 SP
+          </button>
+        </div>
+      </div>
+      <div className="preview-viewport">
+        <div
+          className="preview-frame"
+          style={{
+            width: DEVICE_WIDTHS[deviceSize],
+            margin: deviceSize === 'desktop' ? '0' : '0 auto',
+            transition: 'width 0.3s ease',
+          }}
+        >
+          <iframe
+            ref={iframeRef}
+            className="preview-iframe"
+            title="Preview"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

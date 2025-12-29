@@ -115,6 +115,79 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ block }) => {
         </section>
       );
 
+    case 'gallery':
+      return (
+        <section className="block block-gallery" data-block-id={block.id}>
+          <div className="block-container">
+            <div className="gallery-grid">
+              {((block.content as any).images || []).map((img: any) => (
+                <div key={img.id} className="gallery-item">
+                  <img src={img.src} alt={img.alt || ''} />
+                  {img.caption && <p className="gallery-caption">{img.caption}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'video':
+      return (
+        <section className="block block-video" data-block-id={block.id}>
+          <div className="block-container">
+            {(block.content as any).url && (
+              <div className="video-wrapper">
+                <iframe
+                  src={(block.content as any).url}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            )}
+          </div>
+        </section>
+      );
+
+    case 'audio':
+      return (
+        <section className="block block-audio" data-block-id={block.id}>
+          <div className="block-container">
+            {(block.content as any).url && (
+              <audio controls style={{ width: '100%' }}>
+                <source src={(block.content as any).url} />
+              </audio>
+            )}
+          </div>
+        </section>
+      );
+
+    case 'columns':
+      return (
+        <section className="block block-columns" data-block-id={block.id}>
+          <div className="block-container">
+            <div className="columns-container">
+              {(block.children || []).map((childBlock) => (
+                <div key={childBlock.id} className="column">
+                  <BlockRenderer block={childBlock} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'embed':
+      return (
+        <section className="block block-embed" data-block-id={block.id}>
+          <div className="block-container">
+            <div
+              dangerouslySetInnerHTML={{ __html: (block.content as any).html || '' }}
+            />
+          </div>
+        </section>
+      );
+
     default:
       console.warn(`Unknown block type: ${block.type}`);
       return (

@@ -15,9 +15,10 @@ export type BlockType =
   | 'gallery'        // 画像ギャラリー
   | 'video'          // 動画埋め込み
   | 'audio'          // 音声プレイヤー
+  | 'release'        // リリース情報（ジャケット+情報+ショップリンク統合）
   | 'tracklist'      // トラックリスト
   | 'credits'        // クレジット
-  | 'shop-links'     // ショップリンク
+  | 'shop-links'     // ショップリンク（非推奨: releaseブロックを使用）
   | 'button'         // ボタン/CTA
   | 'divider'        // 区切り線
   | 'spacer'         // スペーサー
@@ -103,13 +104,11 @@ export interface TextBlock extends Block<TextBlockContent, TextBlockSettings> {
 }
 
 export interface TextBlockContent {
-  html: string;  // リッチHTMLコンテンツ
+  text: string;  // プレーンテキスト
 }
 
 export interface TextBlockSettings extends BaseBlockSettings {
-  fontSize?: 'small' | 'medium' | 'large' | 'custom';
-  customFontSize?: number;
-  lineHeight?: number;
+  alignment?: 'left' | 'center' | 'right';
 }
 
 // Heading Block
@@ -215,6 +214,7 @@ export interface CreditItem {
     id: string;
     label: string;
     url: string;
+    /** @deprecated iconフィールドは使用されなくなりました。HTML構造から絵文字を撤廃しました。 */
     icon?: string;
   }[];
 }
@@ -238,6 +238,7 @@ export interface ShopLinksBlockContent {
     id: string;
     label: string;
     url: string;
+    /** @deprecated iconフィールドは使用されなくなりました。HTML構造から絵文字を撤廃しました。 */
     icon?: string;
   }[];
 }
@@ -246,6 +247,32 @@ export interface ShopLinksBlockSettings extends BaseBlockSettings {
   layout: 'horizontal' | 'vertical' | 'grid';
   buttonStyle: 'solid' | 'outline' | 'text';
   showIcons: boolean;
+}
+
+// Release Block (Album Info + Jacket + Shop Links)
+export interface ReleaseBlock extends Block<ReleaseBlockContent, ReleaseBlockSettings> {
+  type: 'release';
+}
+
+export interface ReleaseBlockContent {
+  jacketImage?: string;
+  albumTitle: string;
+  artistName?: string;
+  releaseInfo: {
+    id: string;
+    label: string;
+    value: string;
+  }[];
+  shopLinks: {
+    id: string;
+    label: string;
+    url: string;
+  }[];
+}
+
+export interface ReleaseBlockSettings extends BaseBlockSettings {
+  layout: 'side-by-side' | 'stacked';
+  jacketPosition: 'left' | 'right';
 }
 
 // Button Block
@@ -330,6 +357,7 @@ export interface EmbedBlockSettings extends BaseBlockSettings {
 export interface Project {
   version: string;
   template: string;
+  templateCSS: string;  // テンプレートCSS（.dlptに内包）
   globalSettings: GlobalSettings;
   blocks: Block[];
 }

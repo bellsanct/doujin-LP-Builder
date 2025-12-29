@@ -1,0 +1,298 @@
+/**
+ * gothic テンプレート
+ * ゴシックハードコアを意識した、黒とピンクのコントラストが特徴的なデザイン
+ */
+
+.template-gothic {
+  --font-heading: 'Cinzel', 'Noto Serif JP', serif;
+  --font-body: 'Inter', 'Noto Sans JP', sans-serif;
+  --transition-speed: 0.4s;
+  --glow-accent: 0 0 15px rgba(255, 0, 127, 0.6);
+}
+
+.template-gothic body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+
+/* コンテナ */
+.block-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* 1. Hero Block */
+.block-hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 500px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-bottom: 2px solid var(--accent-color);
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(10,10,10,1) 100%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 0 1.5rem;
+}
+
+.hero-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  color: #fff;
+  text-shadow: 0 0 20px rgba(0,0,0,0.8), 2px 2px 0px var(--accent-color);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.hero-subtitle {
+  font-family: var(--font-heading);
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  letter-spacing: 0.3em;
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+/* 2. Heading Block */
+.block-heading {
+  padding: 4rem 0 2rem;
+}
+
+.heading-text {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  text-align: center;
+  margin-bottom: 0.8rem;
+  color: #fff;
+  letter-spacing: 0.15em;
+  position: relative;
+}
+
+.heading-line {
+  width: 40px;
+  height: 3px;
+  background: var(--accent-color);
+  margin: 0 auto;
+  box-shadow: var(--glow-accent);
+}
+
+/* 3. Text Block */
+.block-text {
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.block-text p {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* 4. Image Block */
+.block-image {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.block-image img {
+  border: 1px solid #333;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  transition: transform 0.5s;
+  max-width: 100%;
+  height: auto;
+}
+
+.block-image img:hover {
+  transform: scale(1.02);
+}
+
+/* 5. Tracklist Block */
+.block-tracklist {
+  padding: 2rem 0;
+}
+
+.track-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(26, 26, 26, 0.5);
+}
+
+.track-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.3s;
+}
+
+.track-row:hover {
+  background: rgba(255, 0, 127, 0.05);
+}
+
+.track-num {
+  width: 60px;
+  padding: 1.2rem 0;
+  text-align: center;
+  font-family: var(--font-heading);
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+.track-main {
+  padding: 1.2rem 0.5rem;
+}
+
+.track-name {
+  display: block;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.track-artist {
+  display: inline-block;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.track-time {
+  width: 80px;
+  text-align: right;
+  padding-right: 1rem;
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 6. Shop Links Block */
+.block-shop-links {
+  padding: 3rem 0;
+}
+
+.shop-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-shop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.2rem 2.5rem;
+  background: transparent;
+  color: #fff;
+  text-decoration: none;
+  border: 2px solid var(--accent-color);
+  font-weight: bold;
+  font-family: var(--font-heading);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.1em;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shop:hover {
+  background: var(--accent-color);
+  box-shadow: var(--glow-accent);
+  transform: translateY(-3px);
+}
+
+/* 7. Credits Block */
+.block-credits {
+  padding: 3rem 0;
+}
+
+.credits-group-title {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--accent-color);
+  margin-bottom: 2rem;
+  text-align: center;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: table;
+  margin-left: auto;
+  margin-right: auto;
+  padding-bottom: 0.3rem;
+}
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.credit-item {
+  padding: 1.5rem;
+  background: var(--secondary-color);
+  border-left: 4px solid var(--accent-color);
+}
+
+.credit-role {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+  font-weight: bold;
+}
+
+.credit-name {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  margin-bottom: 0.8rem;
+}
+
+.credit-links a {
+  font-size: 0.9rem;
+  color: #fff;
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.credit-links a:hover {
+  opacity: 1;
+  color: var(--accent-color);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .template-gothic body {
+    font-size: 15px;
+  }
+
+  .block-container {
+    padding: 0 1.2rem;
+  }
+
+  .hero-title {
+    font-size: 3rem;
+  }
+
+  .btn-shop {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .track-num {
+    width: 40px;
+  }
+}

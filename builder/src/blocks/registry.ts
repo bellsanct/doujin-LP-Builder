@@ -46,13 +46,12 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     label: 'テキスト',
     icon: '📝',
     category: 'content',
-    description: 'リッチテキストブロック',
+    description: 'テキストブロック',
     defaultSettings: {
-      fontSize: 'medium',
       alignment: 'left',
     },
     defaultContent: {
-      html: '<p>テキストを入力...</p>',
+      text: 'テキストを入力...',
     },
   },
 
@@ -194,7 +193,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     label: 'ショップリンク',
     icon: '🔗',
     category: 'navigation',
-    description: 'ショップへのリンク',
+    description: 'ショップへのリンク（非推奨: releaseブロック推奨）',
     defaultSettings: {
       layout: 'horizontal',
       buttonStyle: 'solid',
@@ -203,6 +202,43 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     },
     defaultContent: {
       links: [
+        {
+          id: '1',
+          label: 'BOOTH',
+          url: '#',
+        },
+      ],
+    },
+  },
+
+  release: {
+    type: 'release',
+    label: 'リリース情報',
+    icon: '💿',
+    category: 'content',
+    description: 'アルバム情報（ジャケット+詳細+ショップリンク統合）',
+    defaultSettings: {
+      layout: 'side-by-side',
+      jacketPosition: 'left',
+      alignment: 'center',
+    },
+    defaultContent: {
+      jacketImage: '',
+      albumTitle: 'Album Title',
+      artistName: 'Artist Name',
+      releaseInfo: [
+        {
+          id: '1',
+          label: 'Release',
+          value: '2025.12.31',
+        },
+        {
+          id: '2',
+          label: 'Price',
+          value: '¥1,000',
+        },
+      ],
+      shopLinks: [
         {
           id: '1',
           label: 'BOOTH',

@@ -30,10 +30,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   decryptString: (encrypted: string) => ipcRenderer.invoke('decrypt-string', encrypted),
 
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
-  
+
   readFileBase64: (filePath: string) => ipcRenderer.invoke('read-file-base64', filePath),
-  
-  writeFile: (filePath: string, content: string) => 
+
+  writeFile: (filePath: string, content: string) =>
     ipcRenderer.invoke('write-file', filePath, content),
   
   createDirectory: (dirPath: string) => ipcRenderer.invoke('create-directory', dirPath),

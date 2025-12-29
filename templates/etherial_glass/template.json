@@ -1,0 +1,155 @@
+{
+  "version": "2.0.0",
+  "template": "ethereal-glass",
+  "globalSettings": {
+    "colors": {
+      "primary": "#f4f9fc",
+      "secondary": "#5d8aa8",
+      "accent": "#ffb7b2",
+      "background": "#f4f9fc",
+      "text": "#555555"
+    },
+    "typography": {
+      "headingFont": "'Garamond', 'Times New Roman', 'YuMincho', 'Hiragino Mincho ProN', serif",
+      "bodyFont": "'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif",
+      "baseSize": 16,
+      "scale": 1.25
+    },
+    "layout": {
+      "maxWidth": 1000,
+      "gutter": 24
+    }
+  },
+  "blocks": [
+    {
+      "id": "hero-main",
+      "type": "hero",
+      "order": 0,
+      "visible": true,
+      "settings": {
+        "height": "viewport",
+        "overlay": {
+          "enabled": true,
+          "color": "#ffffff",
+          "opacity": 0.2
+        }
+      },
+      "content": {
+        "title": "Ethereal Melody",
+        "subtitle": "New Release 2025.12.31"
+      }
+    },
+    {
+      "id": "heading-concept",
+      "type": "heading",
+      "order": 1,
+      "visible": true,
+      "settings": { "level": 2 },
+      "content": { "text": "About" }
+    },
+    {
+      "id": "text-concept",
+      "type": "text",
+      "order": 2,
+      "visible": true,
+      "settings": { "alignment": "center" },
+      "content": { 
+        "text": "ここにアルバムのコンセプト文が入ります。透明感のあるデザインに合わせて、繊細な言葉を添えてください。\n改行を含めた表現が可能です。" 
+      }
+    },
+    {
+      "id": "release-info",
+      "type": "release",
+      "order": 3,
+      "visible": true,
+      "settings": {
+        "layout": "side-by-side",
+        "jacketPosition": "left"
+      },
+      "content": {
+        "albumTitle": "Crystal Voyage",
+        "artistName": "Artist Name",
+        "releaseInfo": [
+          { "id": "r1", "label": "Release", "value": "2025.12.31" },
+          { "id": "r2", "label": "Event", "value": "C105" },
+          { "id": "r3", "label": "Price", "value": "¥1,500" }
+        ],
+        "shopLinks": [
+          { "id": "s1", "label": "BOOTH", "url": "#" },
+          { "id": "s2", "label": "Bandcamp", "url": "#" }
+        ]
+      }
+    },
+    {
+      "id": "heading-tracks",
+      "type": "heading",
+      "order": 4,
+      "visible": true,
+      "settings": { "level": 2 },
+      "content": { "text": "Tracklist" }
+    },
+    {
+      "id": "tracklist-main",
+      "type": "tracklist",
+      "order": 5,
+      "visible": true,
+      "settings": {
+        "showNumbers": true,
+        "showArtist": true,
+        "showDuration": true
+      },
+      "content": {
+        "tracks": [
+          { "id": "t1", "number": "01", "title": "First Light", "artist": "Composer A", "duration": "4:20" },
+          { "id": "t2", "number": "02", "title": "Glass Reflection", "artist": "Composer B", "duration": "3:55" },
+          { "id": "t3", "number": "03", "title": "Blue Hour", "artist": "Composer A", "duration": "5:10" }
+        ]
+      }
+    },
+    {
+      "id": "heading-credits",
+      "type": "heading",
+      "order": 6,
+      "visible": true,
+      "settings": { "level": 2 },
+      "content": { "text": "Credits" }
+    },
+    {
+      "id": "credits-main",
+      "type": "credits",
+      "order": 7,
+      "visible": true,
+      "settings": { "showLinks": true },
+      "content": {
+        "groups": [
+          {
+            "id": "g1",
+            "title": "Production",
+            "items": [
+              {
+                "id": "c1",
+                "role": "Direction",
+                "name": "Staff Name",
+                "links": [{ "id": "l1", "label": "Twitter", "url": "#" }]
+              },
+              {
+                "id": "c2",
+                "role": "Illustration",
+                "name": "Illustrator Name",
+                "links": [{ "id": "l2", "label": "Pixiv", "url": "#" }]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "footer-text",
+      "type": "text",
+      "order": 8,
+      "visible": true,
+      "settings": { "alignment": "center" },
+      "content": { "text": "© 2025 Your Label Name" }
+    }
+  ]
+}
