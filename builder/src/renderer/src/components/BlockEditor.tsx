@@ -155,8 +155,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                 <button
                   className="category-header"
                   onClick={() => toggleCategory(category)}
+                  aria-expanded={isExpanded}
+                  aria-label={`${categoryLabels[category]}カテゴリー${isExpanded ? '閉じる' : '開く'}`}
                 >
-                  <span className="category-icon">
+                  <span className="category-icon" aria-hidden="true">
                     {isExpanded ? '▼' : '▶'}
                   </span>
                   <span className="category-label">
@@ -172,8 +174,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                         className="block-item"
                         onClick={() => handleAddBlock(blockDef.type)}
                         title={blockDef.description}
+                        aria-label={`${blockDef.label}ブロックを追加`}
+                        role="button"
                       >
-                        <span className="block-icon">{blockDef.icon}</span>
+                        <span className="block-icon" aria-hidden="true">{blockDef.icon}</span>
                         <span className="block-label">{blockDef.label}</span>
                       </button>
                     ))}
@@ -297,6 +301,21 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
   const blockDef = blockRegistry[block.type];
   const content = block.content as any;
   const settings = block.settings as any;
+
+  // アコーディオンセクションの状態管理
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['content', 'style'])
+  );
+
+  const toggleSection = (sectionId: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(sectionId)) {
+      newExpanded.delete(sectionId);
+    } else {
+      newExpanded.add(sectionId);
+    }
+    setExpandedSections(newExpanded);
+  };
 
   // デバウンス用のタイマー参照
   const debounceTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());

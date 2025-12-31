@@ -455,6 +455,67 @@
 }
 
 /* ==========================================
+   設定パネルアコーディオン
+   ========================================== */
+
+.settings-accordion-section {
+  margin-bottom: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+}
+
+.accordion-header {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border: none;
+  border-bottom: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s;
+  border-radius: 6px 6px 0 0;
+}
+
+.accordion-header:hover {
+  background: #f0f7ff;
+  color: #0066cc;
+}
+
+.accordion-header.expanded {
+  border-bottom-color: #e0e0e0;
+}
+
+.accordion-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.accordion-icon {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.accordion-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.accordion-content {
+  padding: 1rem;
+  display: none;
+}
+
+.accordion-content.expanded {
+  display: block;
+}
+
+/* ==========================================
    配列アイテム
    ========================================== */
 
@@ -561,6 +622,42 @@
 
 .btn-remove-small:hover {
   background: #cc0000;
+}
+
+/* ==========================================
+   アクセシビリティ: フォーカスインジケーター
+   ========================================== */
+
+*:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.block-item:focus-visible {
+  background: #f0f7ff;
+  outline-color: #0066cc;
+}
+
+.category-header:focus-visible {
+  background: #f0f7ff;
+}
+
+.btn-add:focus-visible,
+.btn-remove:focus-visible,
+.btn-upload:focus-visible {
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3);
+}
+
+input[type="text"]:focus-visible,
+input[type="number"]:focus-visible,
+input[type="url"]:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: -1px;
+  box-shadow: 0 0 0 1px #0078d4;
 }
 
 /* ==========================================

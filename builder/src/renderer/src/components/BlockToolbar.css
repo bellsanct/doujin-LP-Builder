@@ -1,0 +1,67 @@
+/* ==========================================
+   ブロックツールバー
+   ========================================== */
+
+.block-toolbar {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+}
+
+/* ホバー時に表示 */
+.block-preview-item:hover .block-toolbar,
+.block-preview-item.selected .block-toolbar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.toolbar-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #444;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background: #f0f7ff;
+  color: #0066cc;
+}
+
+.toolbar-btn:active:not(:disabled) {
+  background: #e0efff;
+  transform: scale(0.95);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.toolbar-btn-danger:hover:not(:disabled) {
+  background: #fff0f0;
+  color: #cc0000;
+}
+
+.toolbar-btn-danger:active:not(:disabled) {
+  background: #ffe0e0;
+}
