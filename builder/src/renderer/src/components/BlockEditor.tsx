@@ -86,6 +86,26 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
     }
   };
 
+  // ブロック移動
+  const handleMoveBlock = (blockId: string, direction: 'up' | 'down') => {
+    const blocks = [...project.blocks];
+    const index = blocks.findIndex((b) => b.id === blockId);
+
+    if (index === -1) return;
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === blocks.length - 1) return;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    [blocks[index], blocks[newIndex]] = [blocks[newIndex], blocks[index]];
+
+    // orderプロパティを更新
+    blocks.forEach((block, i) => {
+      block.order = i;
+    });
+
+    onChange({ ...project, blocks });
+  };
+
   // ブロック更新
   const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
     const updatedProject = {
@@ -200,9 +220,28 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                 {blockRegistry[selectedBlock.type].label}
               </span>
               <button
+                className="btn-move-header"
+                onClick={() => handleMoveBlock(selectedBlock.id, 'up')}
+                disabled={project.blocks.findIndex(b => b.id === selectedBlock.id) === 0}
+                title="上に移動"
+                aria-label="ブロックを上に移動"
+              >
+                ↑
+              </button>
+              <button
+                className="btn-move-header"
+                onClick={() => handleMoveBlock(selectedBlock.id, 'down')}
+                disabled={project.blocks.findIndex(b => b.id === selectedBlock.id) === project.blocks.length - 1}
+                title="下に移動"
+                aria-label="ブロックを下に移動"
+              >
+                ↓
+              </button>
+              <button
                 className="btn-delete-header"
                 onClick={() => handleDeleteBlock(selectedBlock.id)}
                 title="削除"
+                aria-label="ブロックを削除"
               >
                 ✕
               </button>
@@ -364,6 +403,37 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
 
     debounceTimerRef.current.set(key, timer);
   }, [settings, onUpdate]);
+
+  // アコーディオンセクションのヘルパーコンポーネント
+  const AccordionSection: React.FC<{
+    id: string;
+    title: string;
+    icon: string;
+    children: React.ReactNode;
+  }> = ({ id, title, icon, children }) => {
+    const isExpanded = expandedSections.has(id);
+    return (
+      <div className="settings-accordion-section">
+        <button
+          className={`accordion-header ${isExpanded ? 'expanded' : ''}`}
+          onClick={() => toggleSection(id)}
+          aria-expanded={isExpanded}
+          aria-label={`${title}セクション${isExpanded ? '閉じる' : '開く'}`}
+        >
+          <span className="accordion-header-title">
+            <span aria-hidden="true">{icon}</span>
+            <span>{title}</span>
+          </span>
+          <span className={`accordion-icon ${isExpanded ? 'expanded' : ''}`} aria-hidden="true">
+            ▶
+          </span>
+        </button>
+        <div className={`accordion-content ${isExpanded ? 'expanded' : ''}`}>
+          {children}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="block-settings-form">

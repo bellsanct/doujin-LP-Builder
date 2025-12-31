@@ -229,6 +229,27 @@
   gap: 0.3rem;
 }
 
+.btn-move-header {
+  padding: 0.2rem 0.5rem;
+  background: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 28px;
+}
+
+.btn-move-header:hover:not(:disabled) {
+  background: #0066cc;
+}
+
+.btn-move-header:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .btn-delete-header {
   padding: 0.2rem 0.5rem;
   background: #ff4444;

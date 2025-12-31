@@ -378,16 +378,37 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({ project, selectedBlo
     /* 選択状態のハイライト */
     [data-block-id] {
       position: relative;
-      transition: box-shadow 0.2s;
+      transition: all 0.2s ease;
+      outline: 2px solid transparent;
+      outline-offset: -2px;
     }
 
     [data-block-id]:hover {
       cursor: pointer;
-      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.3) inset;
+      outline-color: rgba(0, 102, 204, 0.4);
+      background-color: rgba(0, 102, 204, 0.02);
     }
 
     [data-block-id].selected {
-      box-shadow: 0 0 0 3px #0066cc inset;
+      outline: 3px solid #0078d4;
+      outline-offset: -3px;
+      background-color: rgba(0, 120, 212, 0.05);
+      box-shadow: 0 0 0 1px rgba(0, 120, 212, 0.1);
+    }
+
+    [data-block-id].selected::before {
+      content: '✓ 選択中';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #0078d4;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      z-index: 10;
+      pointer-events: none;
     }
 
     /* テンプレートCSS */
