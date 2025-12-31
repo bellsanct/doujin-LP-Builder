@@ -105,7 +105,7 @@ function AppContent() {
     setProject(updatedProject);
   };
 
-  const handleSave = async () => {
+  const handleSave = React.useCallback(async () => {
     if (!project) return;
 
     try {
@@ -134,7 +134,22 @@ function AppContent() {
       console.error('Failed to save project:', error);
       alert('プロジェクトの保存に失敗しました');
     }
-  };
+  }, [project, projectFilePath]);
+
+  // キーボードショートカット: Ctrl+S / Cmd+S で保存
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (project) {
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [project, handleSave]);
 
   const handleBuild = () => {
     // TODO: 静的サイトビルド

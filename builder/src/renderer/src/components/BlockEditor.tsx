@@ -25,6 +25,39 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
 
+  // キーボードショートカット
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+D または Cmd+D: ブロック複製
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && selectedBlockId) {
+        e.preventDefault();
+        const selectedBlock = project.blocks.find((b) => b.id === selectedBlockId);
+        if (selectedBlock) {
+          const newBlock = {
+            ...selectedBlock,
+            id: `block-${Date.now()}`,
+          };
+          const selectedIndex = project.blocks.findIndex((b) => b.id === selectedBlockId);
+          const updatedBlocks = [...project.blocks];
+          updatedBlocks.splice(selectedIndex + 1, 0, newBlock);
+          onChange({ ...project, blocks: updatedBlocks });
+          setSelectedBlockId(newBlock.id);
+        }
+      }
+      // Delete: ブロック削除
+      else if (e.key === 'Delete' && selectedBlockId) {
+        handleDeleteBlock(selectedBlockId);
+      }
+      // Escape: 選択解除
+      else if (e.key === 'Escape') {
+        setSelectedBlockId(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedBlockId, project, onChange]);
+
   // Note: テンプレートCSSはBlockPreviewのiframe内で読み込まれる
 
   // 選択中のブロックを取得
