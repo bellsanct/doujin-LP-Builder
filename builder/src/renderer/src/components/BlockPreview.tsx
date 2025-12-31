@@ -7,6 +7,7 @@ interface BlockPreviewProps {
   project: Project;
   selectedBlockId: string | null;
   onBlockSelect: (blockId: string | null) => void;
+  onReorderBlocks: (draggedBlockId: string, targetBlockId: string) => void;
 }
 
 type DeviceSize = 'desktop' | 'tablet' | 'mobile';
@@ -304,7 +305,12 @@ function blockToHTML(block: Block): string {
   }
 }
 
-export const BlockPreview: React.FC<BlockPreviewProps> = ({ project, selectedBlockId, onBlockSelect }) => {
+export const BlockPreview: React.FC<BlockPreviewProps> = ({
+  project,
+  selectedBlockId,
+  onBlockSelect,
+  onReorderBlocks
+}) => {
   const [deviceSize, setDeviceSize] = useState<DeviceSize>('desktop');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -411,6 +417,16 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({ project, selectedBlo
       pointer-events: none;
     }
 
+    /* ドラッグ&ドロップのスタイル */
+    [data-block-id].dragging {
+      opacity: 0.4;
+      cursor: move !important;
+    }
+
+    [data-block-id].drag-over {
+      border-top: 3px solid #0078d4;
+    }
+
     /* テンプレートCSS */
     ${templateCSS}
   </style>
@@ -422,6 +438,78 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({ project, selectedBlo
     console.log('[iframe] Template:', '${project.template}');
     console.log('[iframe] CSS loaded:', ${templateCSS.length > 0});
     console.log('[iframe] Blocks count:', document.querySelectorAll('[data-block-id]').length);
+
+    // 全ブロックをドラッグ可能にする
+    document.querySelectorAll('[data-block-id]').forEach(block => {
+      block.setAttribute('draggable', 'true');
+    });
+
+    let draggedElement = null;
+
+    // ドラッグ開始
+    document.addEventListener('dragstart', (e) => {
+      const blockElement = e.target.closest('[data-block-id]');
+      if (blockElement) {
+        draggedElement = blockElement;
+        blockElement.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', blockElement.getAttribute('data-block-id'));
+      }
+    });
+
+    // ドラッグ終了
+    document.addEventListener('dragend', (e) => {
+      const blockElement = e.target.closest('[data-block-id]');
+      if (blockElement) {
+        blockElement.classList.remove('dragging');
+        // すべてのdrag-overクラスを削除
+        document.querySelectorAll('[data-block-id]').forEach(el => {
+          el.classList.remove('drag-over');
+        });
+      }
+      draggedElement = null;
+    });
+
+    // ドラッグオーバー
+    document.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const blockElement = e.target.closest('[data-block-id]');
+      if (blockElement && blockElement !== draggedElement) {
+        e.dataTransfer.dropEffect = 'move';
+        // すべてのdrag-overクラスを削除してから追加
+        document.querySelectorAll('[data-block-id]').forEach(el => {
+          el.classList.remove('drag-over');
+        });
+        blockElement.classList.add('drag-over');
+      }
+    });
+
+    // ドラッグ離脱
+    document.addEventListener('dragleave', (e) => {
+      const blockElement = e.target.closest('[data-block-id]');
+      if (blockElement) {
+        blockElement.classList.remove('drag-over');
+      }
+    });
+
+    // ドロップ
+    document.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const targetElement = e.target.closest('[data-block-id]');
+      if (targetElement && draggedElement && targetElement !== draggedElement) {
+        const draggedId = draggedElement.getAttribute('data-block-id');
+        const targetId = targetElement.getAttribute('data-block-id');
+
+        // 親ウィンドウに並び替えを通知
+        window.parent.postMessage({
+          type: 'block-reorder',
+          draggedBlockId: draggedId,
+          targetBlockId: targetId
+        }, '*');
+
+        targetElement.classList.remove('drag-over');
+      }
+    });
 
     // ブロッククリック時に親ウィンドウに通知
     document.addEventListener('click', (e) => {
@@ -469,12 +557,14 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({ project, selectedBlo
     const handleMessage = (e: MessageEvent) => {
       if (e.data.type === 'block-select') {
         onBlockSelect(e.data.blockId);
+      } else if (e.data.type === 'block-reorder') {
+        onReorderBlocks(e.data.draggedBlockId, e.data.targetBlockId);
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onBlockSelect]);
+  }, [onBlockSelect, onReorderBlocks]);
 
   return (
     <div className="block-preview">

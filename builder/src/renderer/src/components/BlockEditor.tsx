@@ -106,6 +106,28 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
     onChange({ ...project, blocks });
   };
 
+  // ドラッグ&ドロップによるブロック並び替え
+  const handleReorderBlocks = (draggedBlockId: string, targetBlockId: string) => {
+    const blocks = [...project.blocks];
+    const draggedIndex = blocks.findIndex((b) => b.id === draggedBlockId);
+    const targetIndex = blocks.findIndex((b) => b.id === targetBlockId);
+
+    if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
+      return;
+    }
+
+    // ブロックを削除して挿入
+    const [draggedBlock] = blocks.splice(draggedIndex, 1);
+    blocks.splice(targetIndex, 0, draggedBlock);
+
+    // orderプロパティを更新
+    blocks.forEach((block, i) => {
+      block.order = i;
+    });
+
+    onChange({ ...project, blocks });
+  };
+
   // ブロック更新
   const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
     const updatedProject = {
@@ -258,6 +280,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
               project={project}
               selectedBlockId={selectedBlockId}
               onBlockSelect={setSelectedBlockId}
+              onReorderBlocks={handleReorderBlocks}
             />
           )}
         </div>
