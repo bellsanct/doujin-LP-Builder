@@ -53,13 +53,19 @@ function AppContent() {
         if (templateArchive.metadata?.blockBased && templateArchive.metadata?.project) {
           const templateData = templateArchive.metadata.project as Project;
 
+          // ブロックのorderプロパティを正規化（存在しない場合はインデックスで設定）
+          const blocks = (templateData.blocks || []).map((block: any, index: number) => ({
+            ...block,
+            order: block.order !== undefined ? block.order : index,
+          }));
+
           // テンプレートを基に新規プロジェクトを作成
           const newProject: Project = {
             version: templateData.version || '2.0.0',
             template: templateData.template,
             templateCSS: templateData.templateCSS,
             globalSettings: templateData.globalSettings,
-            blocks: templateData.blocks || [],
+            blocks,
           };
 
           setProject(newProject);
@@ -93,7 +99,17 @@ function AppContent() {
         // 保存済みプロジェクトファイルを読み込む
         const content = await window.electronAPI.readFile(filePath);
         const projectData = JSON.parse(content) as Project;
-        setProject(projectData);
+
+        // ブロックのorderプロパティを正規化
+        const blocks = (projectData.blocks || []).map((block: any, index: number) => ({
+          ...block,
+          order: block.order !== undefined ? block.order : index,
+        }));
+
+        setProject({
+          ...projectData,
+          blocks,
+        });
       }
     } catch (error) {
       console.error('Failed to open project:', error);
