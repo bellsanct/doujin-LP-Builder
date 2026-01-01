@@ -15,7 +15,8 @@
   border-bottom: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .device-switcher {
@@ -49,6 +50,55 @@
 .device-switcher button.active {
   background: #0066cc;
   color: white;
+}
+
+.preview-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.control-btn {
+  padding: 0.5rem 1rem;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.control-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+  border-color: #ccc;
+}
+
+.control-btn.active {
+  background: #e8f4f8;
+  color: #0066cc;
+  border-color: #0066cc;
+}
+
+.control-btn.update-btn.pending {
+  background: #fff3e0;
+  color: #f57c00;
+  border-color: #f57c00;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .preview-viewport {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Project, Block } from '../../../types/block-system';
 import { blockRegistry } from '../../../blocks/registry';
 import './BlockPreview.css';
@@ -312,7 +312,11 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
   onReorderBlocks
 }) => {
   const [deviceSize, setDeviceSize] = useState<DeviceSize>('desktop');
+  const [autoUpdate, setAutoUpdate] = useState<boolean>(true);
+  const [pendingUpdate, setPendingUpdate] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastProjectRef = useRef<Project>(project);
 
   // テンプレートCSSはプロジェクトに内包されているため、ファイル読み込み不要
   const templateCSS = project.templateCSS || '/* No template CSS */';
@@ -322,9 +326,10 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
     console.log(`[BlockPreview] Using embedded CSS, length: ${templateCSS.length}`);
   }, [templateCSS]);
 
-  useEffect(() => {
+  // プレビュー更新関数
+  const updatePreview = useCallback(() => {
     if (!iframeRef.current) return;
-    if (!templateCSS) return; // CSSが読み込まれるまで待つ
+    if (!templateCSS) return;
 
     const iframe = iframeRef.current;
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -550,7 +555,50 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
     if (selectedBlockId) {
       iframe.contentWindow?.postMessage({ type: 'update-selection', blockId: selectedBlockId }, '*');
     }
-  }, [project, selectedBlockId]);
+
+    // 更新完了
+    setPendingUpdate(false);
+    lastProjectRef.current = project;
+  }, [project, selectedBlockId, templateCSS]);
+
+  // 自動更新モード: プロジェクトの変更を監視してデバウンス付きで更新
+  useEffect(() => {
+    // プロジェクトが変更されていない場合はスキップ
+    if (JSON.stringify(lastProjectRef.current) === JSON.stringify(project)) {
+      return;
+    }
+
+    // 手動更新モードの場合
+    if (!autoUpdate) {
+      setPendingUpdate(true);
+      return;
+    }
+
+    // 自動更新モード: デバウンス付きで更新
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current);
+    }
+
+    updateTimerRef.current = setTimeout(() => {
+      updatePreview();
+    }, 500); // 500ms のデバウンス
+
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+      }
+    };
+  }, [project, autoUpdate, updatePreview]);
+
+  // 選択状態の変更は即座に反映
+  useEffect(() => {
+    if (!iframeRef.current) return;
+    const iframe = iframeRef.current;
+
+    if (selectedBlockId) {
+      iframe.contentWindow?.postMessage({ type: 'update-selection', blockId: selectedBlockId }, '*');
+    }
+  }, [selectedBlockId]);
 
   // iframe からのメッセージを受け取る
   useEffect(() => {
@@ -591,6 +639,24 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
           >
             📱 SP
           </button>
+        </div>
+        <div className="preview-controls">
+          <button
+            className={`control-btn ${autoUpdate ? 'active' : ''}`}
+            onClick={() => setAutoUpdate(!autoUpdate)}
+            title={autoUpdate ? '自動更新を無効化' : '自動更新を有効化'}
+          >
+            {autoUpdate ? '🔄 自動更新' : '⏸️ 手動更新'}
+          </button>
+          {!autoUpdate && (
+            <button
+              className={`control-btn update-btn ${pendingUpdate ? 'pending' : ''}`}
+              onClick={() => updatePreview()}
+              title="プレビューを更新"
+            >
+              {pendingUpdate ? '🔴 更新' : '✓ 最新'}
+            </button>
+          )}
         </div>
       </div>
       <div className="preview-viewport">
