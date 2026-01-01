@@ -312,11 +312,10 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
   onReorderBlocks
 }) => {
   const [deviceSize, setDeviceSize] = useState<DeviceSize>('desktop');
-  const [autoUpdate, setAutoUpdate] = useState<boolean>(true);
   const [pendingUpdate, setPendingUpdate] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastProjectRef = useRef<Project>(project);
+  const isInitialMount = useRef<boolean>(true);
 
   // テンプレートCSSはプロジェクトに内包されているため、ファイル読み込み不要
   const templateCSS = project.templateCSS || '/* No template CSS */';
@@ -561,34 +560,37 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
     lastProjectRef.current = project;
   }, [project, selectedBlockId, templateCSS]);
 
-  // 自動更新モード: プロジェクトの変更を監視してデバウンス付きで更新
+  // 初回マウント時にプレビューを更新
   useEffect(() => {
+    if (isInitialMount.current && iframeRef.current && templateCSS) {
+      console.log('[BlockPreview] Initial mount - updating preview');
+      isInitialMount.current = false;
+      // 少し遅延させてiframeが完全に準備されるのを待つ
+      setTimeout(() => {
+        updatePreview();
+      }, 100);
+    }
+  }, [updatePreview, templateCSS]);
+
+  // プロジェクトの変更を監視してpendingUpdateフラグを立てる
+  useEffect(() => {
+    // 初回マウント時はスキップ
+    if (isInitialMount.current) {
+      return;
+    }
+
     // プロジェクトが変更されていない場合はスキップ
-    if (JSON.stringify(lastProjectRef.current) === JSON.stringify(project)) {
+    const currentProjectStr = JSON.stringify(project);
+    const lastProjectStr = JSON.stringify(lastProjectRef.current);
+
+    if (currentProjectStr === lastProjectStr) {
       return;
     }
 
-    // 手動更新モードの場合
-    if (!autoUpdate) {
-      setPendingUpdate(true);
-      return;
-    }
-
-    // 自動更新モード: デバウンス付きで更新
-    if (updateTimerRef.current) {
-      clearTimeout(updateTimerRef.current);
-    }
-
-    updateTimerRef.current = setTimeout(() => {
-      updatePreview();
-    }, 500); // 500ms のデバウンス
-
-    return () => {
-      if (updateTimerRef.current) {
-        clearTimeout(updateTimerRef.current);
-      }
-    };
-  }, [project, autoUpdate, updatePreview]);
+    console.log('[BlockPreview] Project changed - pending update');
+    // 変更を検出したらpendingフラグを立てる
+    setPendingUpdate(true);
+  }, [project]);
 
   // 選択状態の変更は即座に反映
   useEffect(() => {
@@ -642,21 +644,12 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
         </div>
         <div className="preview-controls">
           <button
-            className={`control-btn ${autoUpdate ? 'active' : ''}`}
-            onClick={() => setAutoUpdate(!autoUpdate)}
-            title={autoUpdate ? '自動更新を無効化' : '自動更新を有効化'}
+            className={`control-btn update-btn ${pendingUpdate ? 'pending' : ''}`}
+            onClick={() => updatePreview()}
+            title="プレビューを更新"
           >
-            {autoUpdate ? '🔄 自動更新' : '⏸️ 手動更新'}
+            {pendingUpdate ? '🔴 更新' : '✓ 最新'}
           </button>
-          {!autoUpdate && (
-            <button
-              className={`control-btn update-btn ${pendingUpdate ? 'pending' : ''}`}
-              onClick={() => updatePreview()}
-              title="プレビューを更新"
-            >
-              {pendingUpdate ? '🔴 更新' : '✓ 最新'}
-            </button>
-          )}
         </div>
       </div>
       <div className="preview-viewport">
