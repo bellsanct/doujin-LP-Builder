@@ -313,9 +313,11 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
 }) => {
   const [deviceSize, setDeviceSize] = useState<DeviceSize>('desktop');
   const [pendingUpdate, setPendingUpdate] = useState<boolean>(false);
+  const [autoUpdate, setAutoUpdate] = useState<boolean>(true); // 自動更新モード
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastProjectRef = useRef<Project>(project);
   const isInitialMount = useRef<boolean>(true);
+  const autoUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // テンプレートCSSはプロジェクトに内包されているため、ファイル読み込み不要
   const templateCSS = project.templateCSS || '/* No template CSS */';
@@ -572,7 +574,7 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
     }
   }, [updatePreview, templateCSS]);
 
-  // プロジェクトの変更を監視してpendingUpdateフラグを立てる
+  // プロジェクトの変更を監視して自動更新（デバウンス300ms）
   useEffect(() => {
     // 初回マウント時はスキップ
     if (isInitialMount.current) {
@@ -590,7 +592,29 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
     console.log('[BlockPreview] Project changed - pending update');
     // 変更を検出したらpendingフラグを立てる
     setPendingUpdate(true);
-  }, [project]);
+
+    // 自動更新モードの場合、デバウンス付きで自動更新
+    if (autoUpdate) {
+      // 既存のタイマーをクリア
+      if (autoUpdateTimerRef.current) {
+        clearTimeout(autoUpdateTimerRef.current);
+      }
+
+      // 300ms後に自動更新
+      autoUpdateTimerRef.current = setTimeout(() => {
+        console.log('[BlockPreview] Auto-updating preview');
+        updatePreview();
+        autoUpdateTimerRef.current = null;
+      }, 300);
+    }
+
+    // クリーンアップ
+    return () => {
+      if (autoUpdateTimerRef.current) {
+        clearTimeout(autoUpdateTimerRef.current);
+      }
+    };
+  }, [project, autoUpdate, updatePreview]);
 
   // 選択状態の変更は即座に反映
   useEffect(() => {
@@ -644,12 +668,21 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
         </div>
         <div className="preview-controls">
           <button
-            className={`control-btn update-btn ${pendingUpdate ? 'pending' : ''}`}
-            onClick={() => updatePreview()}
-            title="プレビューを更新"
+            className={`control-btn auto-update-btn ${autoUpdate ? 'active' : ''}`}
+            onClick={() => setAutoUpdate(!autoUpdate)}
+            title={autoUpdate ? '自動更新ON（クリックでOFF）' : '自動更新OFF（クリックでON）'}
           >
-            {pendingUpdate ? '🔴 更新' : '✓ 最新'}
+            {autoUpdate ? '🔄 自動' : '⏸️ 手動'}
           </button>
+          {!autoUpdate && (
+            <button
+              className={`control-btn update-btn ${pendingUpdate ? 'pending' : ''}`}
+              onClick={() => updatePreview()}
+              title="プレビューを更新"
+            >
+              {pendingUpdate ? '🔴 更新' : '✓ 最新'}
+            </button>
+          )}
         </div>
       </div>
       <div className="preview-viewport">

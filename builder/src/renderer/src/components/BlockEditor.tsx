@@ -63,12 +63,34 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
   // 選択中のブロックを取得
   const selectedBlock = project.blocks.find((b) => b.id === selectedBlockId);
 
-  // ブロック追加
+  // ブロック追加（選択中のブロックがあればその直後に挿入）
   const handleAddBlock = (type: BlockType) => {
-    const newBlock = createBlock(type, project.blocks.length);
+    const newBlock = createBlock(type, 0); // orderは後で設定
+    let updatedBlocks: Block[];
+
+    if (selectedBlockId) {
+      // 選択中のブロックがある場合、その直後に挿入
+      const selectedIndex = project.blocks.findIndex((b) => b.id === selectedBlockId);
+      if (selectedIndex !== -1) {
+        updatedBlocks = [...project.blocks];
+        updatedBlocks.splice(selectedIndex + 1, 0, newBlock);
+      } else {
+        // 見つからない場合は末尾に追加
+        updatedBlocks = [...project.blocks, newBlock];
+      }
+    } else {
+      // 選択中のブロックがない場合は末尾に追加
+      updatedBlocks = [...project.blocks, newBlock];
+    }
+
+    // orderプロパティを再計算
+    updatedBlocks.forEach((block, index) => {
+      block.order = index;
+    });
+
     const updatedProject = {
       ...project,
-      blocks: [...project.blocks, newBlock],
+      blocks: updatedBlocks,
     };
     onChange(updatedProject);
     setSelectedBlockId(newBlock.id);
@@ -188,6 +210,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
           )}
         </div>
         <div className="palette-content">
+          {/* 挿入位置のヒント */}
+          {selectedBlockId && (
+            <div className="palette-insert-hint">
+              <span>📍 選択中ブロックの後に追加</span>
+            </div>
+          )}
           {getAllCategories().map((category) => {
             const blocks = getBlocksByCategory(category);
             const isExpanded = expandedCategories.has(category);
@@ -460,21 +488,26 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
 
   return (
     <div className="block-settings-form">
-      <h4>
-        {blockDef.icon} {blockDef.label}
-      </h4>
-
-      {/* 共通設定: 表示/非表示 */}
-      <div className="setting-field">
-        <label>
-          <input
-            type="checkbox"
-            checked={block.visible}
-            onChange={(e) => onUpdate({ visible: e.target.checked })}
-          />
-          <span>表示</span>
-        </label>
+      {/* スティッキーヘッダー: 常に表示されるブロック情報 */}
+      <div className="block-settings-sticky-header">
+        <h4>
+          {blockDef.icon} {blockDef.label}
+        </h4>
+        <span className="block-type-badge">{block.type}</span>
       </div>
+
+      <div className="block-settings-form-content">
+        {/* 共通設定: 表示/非表示 */}
+        <div className="setting-field">
+          <label>
+            <input
+              type="checkbox"
+              checked={block.visible}
+              onChange={(e) => onUpdate({ visible: e.target.checked })}
+            />
+            <span>表示</span>
+          </label>
+        </div>
 
       {/* ブロックタイプ別の設定UI */}
       {block.type === 'hero' && (
@@ -981,12 +1014,12 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
       )}
 
       {block.type === 'release' && (
-        <div className="space-y-4">
-          <div className="space-y-4">
-            <h5 className="text-sm font-semibold">ジャケット画像</h5>
+        <div className="space-y-2">
+          <AccordionSection id="release-jacket" title="ジャケット画像" icon="🖼️">
             <div className="space-y-2">
               <Button
                 variant="outline"
+                className="w-full"
                 onClick={async () => {
                   const result = await window.electronAPI.selectFile({
                     filters: [
@@ -1016,58 +1049,61 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                   }
                 }}
               >
-                ジャケット画像を選択
+                📁 ジャケット画像を選択
               </Button>
-              {content.jacketImage && <p className="text-sm text-muted-foreground">画像設定済み</p>}
+              {content.jacketImage && (
+                <div className="mt-2 rounded-md overflow-hidden border">
+                  <img src={content.jacketImage} alt="ジャケットプレビュー" className="w-full h-auto max-h-[120px] object-cover" />
+                </div>
+              )}
             </div>
-          </div>
+          </AccordionSection>
 
-          <div className="space-y-4">
-            <h5 className="text-sm font-semibold">アルバム情報</h5>
-            <div className="space-y-2">
-              <Label htmlFor="release-album-title">アルバムタイトル</Label>
-              <Input
-                id="release-album-title"
-                type="text"
-                value={content.albumTitle || ''}
-                onChange={(e) => updateContent({ albumTitle: e.target.value })}
-                placeholder="Album Title"
-              />
+          <AccordionSection id="release-album" title="アルバム情報" icon="💿">
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="release-album-title">アルバムタイトル</Label>
+                <Input
+                  id="release-album-title"
+                  type="text"
+                  value={content.albumTitle || ''}
+                  onChange={(e) => updateContent({ albumTitle: e.target.value })}
+                  placeholder="Album Title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="release-artist-name">アーティスト名</Label>
+                <Input
+                  id="release-artist-name"
+                  type="text"
+                  value={content.artistName || ''}
+                  onChange={(e) => updateContent({ artistName: e.target.value })}
+                  placeholder="Artist Name"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="release-artist-name">アーティスト名</Label>
-              <Input
-                id="release-artist-name"
-                type="text"
-                value={content.artistName || ''}
-                onChange={(e) => updateContent({ artistName: e.target.value })}
-                placeholder="Artist Name"
-              />
-            </div>
-          </div>
+          </AccordionSection>
 
-          <div className="space-y-4">
-            <h5 className="text-sm font-semibold">リリース情報</h5>
+          <AccordionSection id="release-info" title={`リリース情報 (${(content.releaseInfo || []).length})`} icon="📋">
             <div className="space-y-3">
               {(content.releaseInfo || []).map((info: any, index: number) => (
-                <div key={info.id} className="rounded border p-4 space-y-3">
+                <div key={info.id} className="rounded border p-3 space-y-2 bg-gray-50">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">情報 {index + 1}</span>
+                    <span className="text-xs font-medium text-gray-500">#{index + 1}</span>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
+                      className="h-6 px-2 text-red-500 hover:text-red-700"
                       onClick={() => {
                         const newInfo = content.releaseInfo.filter((_: any, i: number) => i !== index);
                         updateContent({ releaseInfo: newInfo });
                       }}
                     >
-                      削除
+                      ✕
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`release-info-${index}-label`}>ラベル</Label>
+                  <div className="grid grid-cols-2 gap-2">
                     <Input
-                      id={`release-info-${index}-label`}
                       type="text"
                       value={info.label || ''}
                       onChange={(e) => {
@@ -1075,13 +1111,10 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                         newInfo[index] = { ...info, label: e.target.value };
                         updateContent({ releaseInfo: newInfo });
                       }}
-                      placeholder="Release、Priceなど"
+                      placeholder="ラベル"
+                      className="h-8 text-sm"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`release-info-${index}-value`}>値</Label>
                     <Input
-                      id={`release-info-${index}-value`}
                       type="text"
                       value={info.value || ''}
                       onChange={(e) => {
@@ -1089,124 +1122,124 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                         newInfo[index] = { ...info, value: e.target.value };
                         updateContent({ releaseInfo: newInfo });
                       }}
-                      placeholder="2025.12.31、¥1,000など"
+                      placeholder="値"
+                      className="h-8 text-sm"
                     />
                   </div>
                 </div>
               ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  const newInfo = {
+                    id: `info-${Date.now()}`,
+                    label: '',
+                    value: '',
+                  };
+                  updateContent({ releaseInfo: [...(content.releaseInfo || []), newInfo] });
+                }}
+              >
+                + 情報を追加
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const newInfo = {
-                  id: `info-${Date.now()}`,
-                  label: '',
-                  value: '',
-                };
-                updateContent({ releaseInfo: [...(content.releaseInfo || []), newInfo] });
-              }}
-            >
-              + 情報を追加
-            </Button>
-          </div>
+          </AccordionSection>
 
-          <div className="space-y-4">
-            <h5 className="text-sm font-semibold">ショップリンク</h5>
+          <AccordionSection id="release-shops" title={`ショップリンク (${(content.shopLinks || []).length})`} icon="🛒">
             <div className="space-y-3">
               {(content.shopLinks || []).map((link: any, index: number) => (
-                <div key={link.id} className="rounded border p-4 space-y-3">
+                <div key={link.id} className="rounded border p-3 space-y-2 bg-gray-50">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">リンク {index + 1}</span>
+                    <span className="text-xs font-medium text-gray-500">#{index + 1}</span>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
+                      className="h-6 px-2 text-red-500 hover:text-red-700"
                       onClick={() => {
                         const newLinks = content.shopLinks.filter((_: any, i: number) => i !== index);
                         updateContent({ shopLinks: newLinks });
                       }}
                     >
-                      削除
+                      ✕
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`release-link-${index}-label`}>ラベル</Label>
-                    <Input
-                      id={`release-link-${index}-label`}
-                      type="text"
-                      value={link.label || ''}
-                      onChange={(e) => {
-                        const newLinks = [...content.shopLinks];
-                        newLinks[index] = { ...link, label: e.target.value };
-                        updateContent({ shopLinks: newLinks });
-                      }}
-                      placeholder="BOOTH、Melonbooksなど"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`release-link-${index}-url`}>URL</Label>
-                    <Input
-                      id={`release-link-${index}-url`}
-                      type="text"
-                      value={link.url || ''}
-                      onChange={(e) => {
-                        const newLinks = [...content.shopLinks];
-                        newLinks[index] = { ...link, url: e.target.value };
-                        updateContent({ shopLinks: newLinks });
-                      }}
-                      placeholder="https://..."
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    value={link.label || ''}
+                    onChange={(e) => {
+                      const newLinks = [...content.shopLinks];
+                      newLinks[index] = { ...link, label: e.target.value };
+                      updateContent({ shopLinks: newLinks });
+                    }}
+                    placeholder="ショップ名（BOOTH、メロンブックス等）"
+                    className="h-8 text-sm"
+                  />
+                  <Input
+                    type="text"
+                    value={link.url || ''}
+                    onChange={(e) => {
+                      const newLinks = [...content.shopLinks];
+                      newLinks[index] = { ...link, url: e.target.value };
+                      updateContent({ shopLinks: newLinks });
+                    }}
+                    placeholder="https://..."
+                    className="h-8 text-sm"
+                  />
                 </div>
               ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  const newLink = {
+                    id: `link-${Date.now()}`,
+                    label: '',
+                    url: '',
+                  };
+                  updateContent({ shopLinks: [...(content.shopLinks || []), newLink] });
+                }}
+              >
+                + リンクを追加
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const newLink = {
-                  id: `link-${Date.now()}`,
-                  label: '',
-                  url: '',
-                };
-                updateContent({ shopLinks: [...(content.shopLinks || []), newLink] });
-              }}
-            >
-              + リンクを追加
-            </Button>
-          </div>
+          </AccordionSection>
 
-          <div className="space-y-4">
-            <h5 className="text-sm font-semibold">レイアウト設定</h5>
-            <div className="space-y-2">
-              <Label htmlFor="release-layout">レイアウト</Label>
-              <Select
-                value={settings.layout || 'side-by-side'}
-                onValueChange={(value) => updateSettings({ layout: value })}
-              >
-                <SelectTrigger id="release-layout">
-                  <SelectValue placeholder="レイアウトを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="side-by-side">横並び</SelectItem>
-                  <SelectItem value="stacked">縦積み</SelectItem>
-                </SelectContent>
-              </Select>
+          <AccordionSection id="release-layout" title="レイアウト設定" icon="⚙️">
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="release-layout-select">レイアウト</Label>
+                <Select
+                  value={settings.layout || 'side-by-side'}
+                  onValueChange={(value) => updateSettings({ layout: value })}
+                >
+                  <SelectTrigger id="release-layout-select">
+                    <SelectValue placeholder="レイアウトを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="side-by-side">横並び</SelectItem>
+                    <SelectItem value="stacked">縦積み</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="release-jacket-position">ジャケット位置</Label>
+                <Select
+                  value={settings.jacketPosition || 'left'}
+                  onValueChange={(value) => updateSettings({ jacketPosition: value })}
+                >
+                  <SelectTrigger id="release-jacket-position">
+                    <SelectValue placeholder="位置を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="left">左</SelectItem>
+                    <SelectItem value="right">右</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="release-jacket-position">ジャケット位置</Label>
-              <Select
-                value={settings.jacketPosition || 'left'}
-                onValueChange={(value) => updateSettings({ jacketPosition: value })}
-              >
-                <SelectTrigger id="release-jacket-position">
-                  <SelectValue placeholder="位置を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="left">左</SelectItem>
-                  <SelectItem value="right">右</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          </AccordionSection>
         </div>
       )}
 
@@ -1373,93 +1406,90 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
       )}
 
       {block.type === 'credits' && (
-        <div className="space-y-4">
-          <h5 className="text-sm font-semibold">クレジットグループ</h5>
-          <div className="space-y-4">
-            {(content.groups || []).map((group: any, groupIndex: number) => (
-              <div key={group.id} className="rounded border p-4 space-y-4">
+        <div className="space-y-2">
+          {(content.groups || []).map((group: any, groupIndex: number) => (
+            <AccordionSection
+              key={group.id}
+              id={`credits-group-${groupIndex}`}
+              title={group.title || `グループ ${groupIndex + 1}`}
+              icon="👥"
+            >
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">グループ {groupIndex + 1}</span>
+                  <Label htmlFor={`credit-group-${groupIndex}-title`} className="text-xs">グループ名</Label>
                   <Button
-                    variant="destructive"
+                    variant="ghost"
                     size="sm"
+                    className="h-6 px-2 text-red-500 hover:text-red-700"
                     onClick={() => {
                       const newGroups = content.groups.filter((_: any, i: number) => i !== groupIndex);
                       updateContent({ groups: newGroups });
                     }}
                   >
-                    削除
+                    グループ削除
                   </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`credit-group-${groupIndex}-title`}>グループタイトル（任意）</Label>
-                  <Input
-                    id={`credit-group-${groupIndex}-title`}
-                    type="text"
-                    value={group.title || ''}
-                    onChange={(e) => {
-                      const newGroups = [...content.groups];
-                      newGroups[groupIndex] = { ...group, title: e.target.value };
-                      updateContent({ groups: newGroups });
-                    }}
-                    placeholder="サントラ、アートワーク、運営など"
-                  />
-                </div>
-                <div className="space-y-3 pl-4 border-l-2">
-                  <h6 className="text-sm font-medium">メンバー</h6>
-                  <div className="space-y-2">
-                    {(group.items || []).map((item: any, itemIndex: number) => (
-                      <div key={item.id} className="rounded border border-dashed p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium">メンバー {itemIndex + 1}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newGroups = [...content.groups];
-                              newGroups[groupIndex].items = group.items.filter((_: any, i: number) => i !== itemIndex);
-                              updateContent({ groups: newGroups });
-                            }}
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`credit-item-${groupIndex}-${itemIndex}-role`} className="text-xs">役割</Label>
-                          <Input
-                            id={`credit-item-${groupIndex}-${itemIndex}-role`}
-                            type="text"
-                            value={item.role || ''}
-                            onChange={(e) => {
-                              const newGroups = [...content.groups];
-                              newGroups[groupIndex].items[itemIndex] = { ...item, role: e.target.value };
-                              updateContent({ groups: newGroups });
-                            }}
-                            placeholder="作曲、イラストなど"
-                            className="h-8"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`credit-item-${groupIndex}-${itemIndex}-name`} className="text-xs">名前</Label>
-                          <Input
-                            id={`credit-item-${groupIndex}-${itemIndex}-name`}
-                            type="text"
-                            value={item.name || ''}
-                            onChange={(e) => {
-                              const newGroups = [...content.groups];
-                              newGroups[groupIndex].items[itemIndex] = { ...item, name: e.target.value };
-                              updateContent({ groups: newGroups });
-                            }}
-                            placeholder="名前"
-                            className="h-8"
-                          />
-                        </div>
+                <Input
+                  id={`credit-group-${groupIndex}-title`}
+                  type="text"
+                  value={group.title || ''}
+                  onChange={(e) => {
+                    const newGroups = [...content.groups];
+                    newGroups[groupIndex] = { ...group, title: e.target.value };
+                    updateContent({ groups: newGroups });
+                  }}
+                  placeholder="サントラ、アートワーク、運営など"
+                  className="h-8 text-sm"
+                />
+                <div className="space-y-2 mt-3">
+                  <span className="text-xs font-medium text-gray-500">メンバー ({(group.items || []).length})</span>
+                  {(group.items || []).map((item: any, itemIndex: number) => (
+                    <div key={item.id} className="rounded border p-2 space-y-2 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">#{itemIndex + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 px-1 text-red-400 hover:text-red-600"
+                          onClick={() => {
+                            const newGroups = [...content.groups];
+                            newGroups[groupIndex].items = group.items.filter((_: any, i: number) => i !== itemIndex);
+                            updateContent({ groups: newGroups });
+                          }}
+                        >
+                          ✕
+                        </Button>
                       </div>
-                    ))}
-                  </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="text"
+                          value={item.role || ''}
+                          onChange={(e) => {
+                            const newGroups = [...content.groups];
+                            newGroups[groupIndex].items[itemIndex] = { ...item, role: e.target.value };
+                            updateContent({ groups: newGroups });
+                          }}
+                          placeholder="役割"
+                          className="h-7 text-xs"
+                        />
+                        <Input
+                          type="text"
+                          value={item.name || ''}
+                          onChange={(e) => {
+                            const newGroups = [...content.groups];
+                            newGroups[groupIndex].items[itemIndex] = { ...item, name: e.target.value };
+                            updateContent({ groups: newGroups });
+                          }}
+                          placeholder="名前"
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                    </div>
+                  ))}
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-full h-7 text-xs"
                     onClick={() => {
                       const newItem = {
                         id: `item-${Date.now()}`,
@@ -1476,10 +1506,11 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                   </Button>
                 </div>
               </div>
-            ))}
-          </div>
+            </AccordionSection>
+          ))}
           <Button
             variant="outline"
+            className="w-full"
             onClick={() => {
               const newGroup = {
                 id: `group-${Date.now()}`,
@@ -1508,6 +1539,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
           </details>
         </div>
       )}
+      </div>{/* .block-settings-form-content の閉じタグ */}
     </div>
   );
 };

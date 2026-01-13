@@ -92,6 +92,16 @@
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.control-btn.auto-update-btn {
+  min-width: 80px;
+}
+
+.control-btn.auto-update-btn.active {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #4caf50;
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
