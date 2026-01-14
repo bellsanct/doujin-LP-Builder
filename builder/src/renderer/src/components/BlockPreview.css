@@ -1,105 +1,109 @@
 /* ==========================================
-   ブロックプレビュー
+   ブロックプレビュー - Figma-inspired Design
    ========================================== */
 
 .block-preview {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #f9f9f9;
+  background: var(--surface-tertiary, #f0f0f1);
 }
 
 .preview-toolbar {
-  padding: 1rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 var(--space-md, 12px);
+  background: var(--surface-primary, #ffffff);
+  border-bottom: 1px solid var(--border-default, #e5e5e5);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-md, 12px);
 }
 
 .device-switcher {
   display: flex;
-  gap: 0.5rem;
-  background: #f5f5f5;
-  padding: 0.25rem;
-  border-radius: 6px;
+  gap: 2px;
+  background: var(--surface-tertiary, #f0f0f1);
+  padding: 2px;
+  border-radius: var(--radius-sm, 4px);
 }
 
 .device-switcher button {
-  padding: 0.5rem 1rem;
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  height: 28px;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--font-xs, 11px);
   font-weight: 500;
-  color: #666;
-  transition: all 0.2s;
+  color: var(--text-secondary, #5c5c5c);
+  transition: all 0.1s ease;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--space-xs, 4px);
 }
 
 .device-switcher button:hover {
-  background: #e0e0e0;
-  color: #333;
+  background: var(--surface-secondary, #f7f7f8);
+  color: var(--text-primary, #1a1a1a);
 }
 
 .device-switcher button.active {
-  background: #0066cc;
+  background: var(--accent-primary, #0d99ff);
   color: white;
 }
 
 .preview-controls {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-xs, 4px);
   align-items: center;
 }
 
 .control-btn {
-  padding: 0.5rem 1rem;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  height: 28px;
+  background: var(--surface-secondary, #f7f7f8);
+  border: 1px solid var(--border-default, #e5e5e5);
+  border-radius: var(--radius-sm, 4px);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--font-xs, 11px);
   font-weight: 500;
-  color: #666;
-  transition: all 0.2s;
+  color: var(--text-secondary, #5c5c5c);
+  transition: all 0.1s ease;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--space-xs, 4px);
 }
 
 .control-btn:hover {
-  background: #e0e0e0;
-  color: #333;
-  border-color: #ccc;
+  background: var(--surface-tertiary, #f0f0f1);
+  color: var(--text-primary, #1a1a1a);
+  border-color: var(--border-strong, #d0d0d0);
 }
 
 .control-btn.active {
-  background: #e8f4f8;
-  color: #0066cc;
-  border-color: #0066cc;
+  background: var(--accent-primary-subtle, rgba(13, 153, 255, 0.08));
+  color: var(--accent-primary, #0d99ff);
+  border-color: var(--accent-primary, #0d99ff);
 }
 
 .control-btn.update-btn.pending {
-  background: #fff3e0;
-  color: #f57c00;
-  border-color: #f57c00;
+  background: var(--warning-subtle, rgba(255, 184, 0, 0.08));
+  color: var(--warning, #ffb800);
+  border-color: var(--warning, #ffb800);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 .control-btn.auto-update-btn {
-  min-width: 80px;
+  min-width: 72px;
 }
 
 .control-btn.auto-update-btn.active {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border-color: #4caf50;
+  background: var(--success-subtle, rgba(20, 174, 92, 0.08));
+  color: var(--success, #14ae5c);
+  border-color: var(--success, #14ae5c);
 }
 
 @keyframes pulse {
@@ -114,13 +118,13 @@
 .preview-viewport {
   flex: 1;
   overflow: auto;
-  padding: 2rem 1rem;
+  padding: var(--space-lg, 16px);
 }
 
 .preview-frame {
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  background: var(--surface-primary, #ffffff);
+  box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-md, 6px);
   overflow: hidden;
 }
 
@@ -137,11 +141,38 @@
 
 @media (max-width: 900px) {
   .preview-viewport {
-    padding: 1rem 0.5rem;
+    padding: var(--space-sm, 8px);
   }
 
   .device-switcher button {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
+    padding: var(--space-xs, 4px) var(--space-sm, 8px);
+    font-size: 10px;
   }
+
+  .control-btn {
+    padding: var(--space-xs, 4px) var(--space-sm, 8px);
+    font-size: 10px;
+  }
+}
+
+/* ==========================================
+   スクロールバー
+   ========================================== */
+
+.preview-viewport::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.preview-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.preview-viewport::-webkit-scrollbar-thumb {
+  background: var(--border-strong, #d0d0d0);
+  border-radius: 3px;
+}
+
+.preview-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary, #8c8c8c);
 }
