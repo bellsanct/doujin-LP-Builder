@@ -172,6 +172,19 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
     setExpandedCategories(newExpanded);
   };
 
+  // プレビューからのブロック選択（設定パネルも自動で切り替え）
+  const handleBlockSelectFromPreview = (blockId: string | null) => {
+    setSelectedBlockId(blockId);
+    if (blockId) {
+      // ブロックが選択されたら設定パネルを「ブロック」タブに切り替え
+      setSettingsView('block');
+      // 右パネルが折りたたまれていたら展開
+      if (rightPanelCollapsed) {
+        setRightPanelCollapsed(false);
+      }
+    }
+  };
+
   const categoryLabels: Record<string, string> = {
     layout: 'レイアウト',
     media: 'メディア',
@@ -307,7 +320,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
             <BlockPreview
               project={project}
               selectedBlockId={selectedBlockId}
-              onBlockSelect={setSelectedBlockId}
+              onBlockSelect={handleBlockSelectFromPreview}
               onReorderBlocks={handleReorderBlocks}
             />
           )}
