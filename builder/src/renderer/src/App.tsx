@@ -94,26 +94,63 @@ function AppContent() {
 
       if (result) {
         const filePath = result;
-        setProjectFilePath(filePath);
 
-        // 保存済みプロジェクトファイルを読み込む
-        const content = await window.electronAPI.readFile(filePath);
-        const projectData = JSON.parse(content) as Project;
+        // まずJSONとして読み込みを試みる（保存済みプロジェクト）
+        try {
+          const content = await window.electronAPI.readFile(filePath);
+          const projectData = JSON.parse(content) as Project;
 
-        // ブロックのorderプロパティを正規化
-        const blocks = (projectData.blocks || []).map((block: any, index: number) => ({
-          ...block,
-          order: block.order !== undefined ? block.order : index,
-        }));
+          // ブロックのorderプロパティを正規化
+          const blocks = (projectData.blocks || []).map((block: any, index: number) => ({
+            ...block,
+            order: block.order !== undefined ? block.order : index,
+          }));
 
-        setProject({
-          ...projectData,
-          blocks,
-        });
+          setProjectFilePath(filePath);
+          setProject({
+            ...projectData,
+            blocks,
+          });
+          return;
+        } catch (jsonError) {
+          // JSONパースに失敗した場合はテンプレート（ZIP）として読み込みを試みる
+          console.log('[Renderer] JSON parse failed, trying as template archive...');
+        }
+
+        // テンプレートアーカイブとして読み込み
+        try {
+          const templateArchive = await window.electronAPI.openTemplateFromPath(filePath);
+
+          if (templateArchive.metadata?.blockBased && templateArchive.metadata?.project) {
+            const templateData = templateArchive.metadata.project as Project;
+
+            const blocks = (templateData.blocks || []).map((block: any, index: number) => ({
+              ...block,
+              order: block.order !== undefined ? block.order : index,
+            }));
+
+            const newProject: Project = {
+              version: templateData.version || '2.0.0',
+              template: templateData.template,
+              templateCSS: templateData.templateCSS,
+              globalSettings: templateData.globalSettings,
+              blocks,
+            };
+
+            setProject(newProject);
+            setProjectFilePath(null); // テンプレートから読み込んだ場合は新規扱い
+          } else {
+            throw new Error('このファイル形式は対応していません。ブロックベース形式のテンプレートまたは保存済みプロジェクトを使用してください。');
+          }
+        } catch (templateError) {
+          console.error('[Renderer] Template load also failed:', templateError);
+          throw new Error('ファイルの読み込みに失敗しました。対応している形式（JSON形式のプロジェクト、またはブロックベース形式のテンプレート）かご確認ください。');
+        }
       }
     } catch (error) {
       console.error('Failed to open project:', error);
-      alert('プロジェクトファイルの読み込みに失敗しました');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(`プロジェクトファイルの読み込みに失敗しました:\n${errorMessage}`);
     }
   };
 
