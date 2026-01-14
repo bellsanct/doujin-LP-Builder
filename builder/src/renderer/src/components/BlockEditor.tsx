@@ -10,6 +10,61 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  ChevronLeft20Regular,
+  ChevronRight20Regular,
+  ChevronDown20Regular,
+  ArrowUp20Regular,
+  ArrowDown20Regular,
+  Dismiss20Regular,
+  Pin20Regular,
+  Folder20Regular,
+  Image20Regular,
+  Album20Regular,
+  Info20Regular,
+  Cart20Regular,
+  Settings20Regular,
+  People20Regular,
+  Color20Regular,
+  // Block type icons
+  Document20Regular,
+  TextT20Regular,
+  TextHeader120Regular,
+  ImageMultiple20Regular,
+  Video20Regular,
+  MusicNote220Regular,
+  MusicNote120Regular,
+  Link20Regular,
+  TargetArrow20Regular,
+  LineHorizontal120Regular,
+  ArrowMinimizeVertical20Regular,
+  Grid20Regular,
+  Code20Regular,
+} from '@fluentui/react-icons';
+
+// ブロックタイプに対応するFluent UIアイコンを返すコンポーネント
+const BlockTypeIcon: React.FC<{ type: BlockType; className?: string }> = ({ type, className }) => {
+  const iconProps = { className };
+  switch (type) {
+    case 'hero': return <Document20Regular {...iconProps} />;
+    case 'text': return <TextT20Regular {...iconProps} />;
+    case 'heading': return <TextHeader120Regular {...iconProps} />;
+    case 'image': return <Image20Regular {...iconProps} />;
+    case 'gallery': return <ImageMultiple20Regular {...iconProps} />;
+    case 'video': return <Video20Regular {...iconProps} />;
+    case 'audio': return <MusicNote220Regular {...iconProps} />;
+    case 'tracklist': return <MusicNote120Regular {...iconProps} />;
+    case 'credits': return <People20Regular {...iconProps} />;
+    case 'shop-links': return <Link20Regular {...iconProps} />;
+    case 'release': return <Album20Regular {...iconProps} />;
+    case 'button': return <TargetArrow20Regular {...iconProps} />;
+    case 'divider': return <LineHorizontal120Regular {...iconProps} />;
+    case 'spacer': return <ArrowMinimizeVertical20Regular {...iconProps} />;
+    case 'columns': return <Grid20Regular {...iconProps} />;
+    case 'embed': return <Code20Regular {...iconProps} />;
+    default: return <Document20Regular {...iconProps} />;
+  }
+};
 
 interface BlockEditorProps {
   project: Project;
@@ -210,7 +265,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
               onClick={() => setLeftPanelCollapsed(false)}
               title="展開"
             >
-              ▶
+              <ChevronRight20Regular />
             </button>
           ) : (
             <>
@@ -223,7 +278,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                 }}
                 title="折りたたむ"
               >
-                ◀
+                <ChevronLeft20Regular />
               </button>
             </>
           )}
@@ -232,7 +287,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
           {/* 挿入位置のヒント */}
           {selectedBlockId && (
             <div className="palette-insert-hint">
-              <span>📍 選択中ブロックの後に追加</span>
+              <Pin20Regular className="hint-icon" />
+              <span>選択中ブロックの後に追加</span>
             </div>
           )}
           {getAllCategories().map((category) => {
@@ -247,8 +303,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                   aria-expanded={isExpanded}
                   aria-label={`${categoryLabels[category]}カテゴリー${isExpanded ? '閉じる' : '開く'}`}
                 >
-                  <span className="category-icon" aria-hidden="true">
-                    {isExpanded ? '▼' : '▶'}
+                  <span className={`category-icon ${isExpanded ? 'expanded' : ''}`} aria-hidden="true">
+                    <ChevronRight20Regular />
                   </span>
                   <span className="category-label">
                     {categoryLabels[category]}
@@ -266,7 +322,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                         aria-label={`${blockDef.label}ブロックを追加`}
                         role="button"
                       >
-                        <span className="block-icon" aria-hidden="true">{blockDef.icon}</span>
+                        <span className="block-icon" aria-hidden="true">
+                          <BlockTypeIcon type={blockDef.type} />
+                        </span>
                         <span className="block-label">{blockDef.label}</span>
                       </button>
                     ))}
@@ -285,7 +343,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
           {selectedBlock && (
             <div className="canvas-header-controls">
               <span className="selected-block-label">
-                {blockRegistry[selectedBlock.type].icon}{' '}
+                <BlockTypeIcon type={selectedBlock.type} />
                 {blockRegistry[selectedBlock.type].label}
               </span>
               <button
@@ -295,7 +353,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                 title="上に移動"
                 aria-label="ブロックを上に移動"
               >
-                ↑
+                <ArrowUp20Regular />
               </button>
               <button
                 className="btn-move-header"
@@ -304,7 +362,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                 title="下に移動"
                 aria-label="ブロックを下に移動"
               >
-                ↓
+                <ArrowDown20Regular />
               </button>
               <button
                 className="btn-delete-header"
@@ -312,7 +370,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                 title="削除"
                 aria-label="ブロックを削除"
               >
-                ✕
+                <Dismiss20Regular />
               </button>
             </div>
           )}
@@ -343,7 +401,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                 onClick={() => setRightPanelCollapsed(false)}
                 title="展開"
               >
-                ◀
+                <ChevronLeft20Regular />
               </button>
             ) : (
               <>
@@ -355,7 +413,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                   }}
                   title="折りたたむ"
                 >
-                  ▶
+                  <ChevronRight20Regular />
                 </button>
                 <h3>設定</h3>
               </>
@@ -478,7 +536,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
   const AccordionSection: React.FC<{
     id: string;
     title: string;
-    icon: string;
+    icon: React.ReactNode;
     children: React.ReactNode;
   }> = ({ id, title, icon, children }) => {
     const isExpanded = expandedSections.has(id);
@@ -491,11 +549,11 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
           aria-label={`${title}セクション${isExpanded ? '閉じる' : '開く'}`}
         >
           <span className="accordion-header-title">
-            <span aria-hidden="true">{icon}</span>
+            <span className="accordion-section-icon" aria-hidden="true">{icon}</span>
             <span>{title}</span>
           </span>
           <span className={`accordion-icon ${isExpanded ? 'expanded' : ''}`} aria-hidden="true">
-            ▶
+            <ChevronRight20Regular />
           </span>
         </button>
         <div className={`accordion-content ${isExpanded ? 'expanded' : ''}`}>
@@ -510,7 +568,8 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
       {/* スティッキーヘッダー: 常に表示されるブロック情報 */}
       <div className="block-settings-sticky-header">
         <h4>
-          {blockDef.icon} {blockDef.label}
+          <BlockTypeIcon type={block.type} className="settings-block-icon" />
+          {blockDef.label}
         </h4>
         <span className="block-type-badge">{block.type}</span>
       </div>
@@ -595,7 +654,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                   }
                 }}
               >
-                📁 画像を選択
+                <Folder20Regular className="btn-icon" /> 画像を選択
               </Button>
               {content.backgroundImage && (
                 <div className="mt-2 rounded-md overflow-hidden border">
@@ -792,7 +851,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                 }
               }}
             >
-              📁 画像を選択
+              <Folder20Regular className="btn-icon" /> 画像を選択
             </Button>
             {content.src && (
               <div className="rounded border p-2">
@@ -1034,7 +1093,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
 
       {block.type === 'release' && (
         <div className="space-y-2">
-          <AccordionSection id="release-jacket" title="ジャケット画像" icon="🖼️">
+          <AccordionSection id="release-jacket" title="ジャケット画像" icon={<Image20Regular />}>
             <div className="space-y-2">
               <Button
                 variant="outline"
@@ -1068,7 +1127,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                   }
                 }}
               >
-                📁 ジャケット画像を選択
+                <Folder20Regular className="btn-icon" /> ジャケット画像を選択
               </Button>
               {content.jacketImage && (
                 <div className="mt-2 rounded-md overflow-hidden border">
@@ -1078,7 +1137,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
             </div>
           </AccordionSection>
 
-          <AccordionSection id="release-album" title="アルバム情報" icon="💿">
+          <AccordionSection id="release-album" title="アルバム情報" icon={<Album20Regular />}>
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="release-album-title">アルバムタイトル</Label>
@@ -1103,7 +1162,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
             </div>
           </AccordionSection>
 
-          <AccordionSection id="release-info" title={`リリース情報 (${(content.releaseInfo || []).length})`} icon="📋">
+          <AccordionSection id="release-info" title={`リリース情報 (${(content.releaseInfo || []).length})`} icon={<Info20Regular />}>
             <div className="space-y-3">
               {(content.releaseInfo || []).map((info: any, index: number) => (
                 <div key={info.id} className="rounded border p-3 space-y-2 bg-gray-50">
@@ -1118,7 +1177,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                         updateContent({ releaseInfo: newInfo });
                       }}
                     >
-                      ✕
+                      <Dismiss20Regular />
                     </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -1165,7 +1224,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
             </div>
           </AccordionSection>
 
-          <AccordionSection id="release-shops" title={`ショップリンク (${(content.shopLinks || []).length})`} icon="🛒">
+          <AccordionSection id="release-shops" title={`ショップリンク (${(content.shopLinks || []).length})`} icon={<Cart20Regular />}>
             <div className="space-y-3">
               {(content.shopLinks || []).map((link: any, index: number) => (
                 <div key={link.id} className="rounded border p-3 space-y-2 bg-gray-50">
@@ -1180,7 +1239,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                         updateContent({ shopLinks: newLinks });
                       }}
                     >
-                      ✕
+                      <Dismiss20Regular />
                     </Button>
                   </div>
                   <Input
@@ -1225,7 +1284,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
             </div>
           </AccordionSection>
 
-          <AccordionSection id="release-layout" title="レイアウト設定" icon="⚙️">
+          <AccordionSection id="release-layout" title="レイアウト設定" icon={<Settings20Regular />}>
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="release-layout-select">レイアウト</Label>
@@ -1431,7 +1490,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
               key={group.id}
               id={`credits-group-${groupIndex}`}
               title={group.title || `グループ ${groupIndex + 1}`}
-              icon="👥"
+              icon={<People20Regular />}
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1476,7 +1535,7 @@ const BlockSettings: React.FC<BlockSettingsProps> = ({ block, onUpdate }) => {
                             updateContent({ groups: newGroups });
                           }}
                         >
-                          ✕
+                          <Dismiss20Regular />
                         </Button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -1618,7 +1677,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({ globalSettings, onUpdat
 
   return (
     <div className="block-settings-form">
-      <h4>🎨 共通設定</h4>
+      <h4><Color20Regular className="settings-header-icon" /> 共通設定</h4>
 
       {/* カラーパレット */}
       <div className="setting-section">

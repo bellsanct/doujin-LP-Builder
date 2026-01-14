@@ -2,6 +2,15 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Project, Block } from '../../../types/block-system';
 import { blockRegistry } from '../../../blocks/registry';
 import './BlockPreview.css';
+import {
+  Desktop20Regular,
+  TabletLaptop20Regular,
+  Phone20Regular,
+  ArrowSync20Regular,
+  Pause20Regular,
+  Checkmark20Regular,
+  Circle20Regular,
+} from '@fluentui/react-icons';
 
 interface BlockPreviewProps {
   project: Project;
@@ -679,21 +688,21 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
             onClick={() => setDeviceSize('desktop')}
             title="デスクトップ"
           >
-            🖥️ PC
+            <Desktop20Regular /> PC
           </button>
           <button
             className={deviceSize === 'tablet' ? 'active' : ''}
             onClick={() => setDeviceSize('tablet')}
             title="タブレット"
           >
-            📱 Tablet
+            <TabletLaptop20Regular /> Tablet
           </button>
           <button
             className={deviceSize === 'mobile' ? 'active' : ''}
             onClick={() => setDeviceSize('mobile')}
             title="モバイル"
           >
-            📱 SP
+            <Phone20Regular /> SP
           </button>
         </div>
         <div className="preview-controls">
@@ -702,7 +711,7 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
             onClick={() => setAutoUpdate(!autoUpdate)}
             title={autoUpdate ? '自動更新ON（クリックでOFF）' : '自動更新OFF（クリックでON）'}
           >
-            {autoUpdate ? '🔄 自動' : '⏸️ 手動'}
+            {autoUpdate ? <><ArrowSync20Regular /> 自動</> : <><Pause20Regular /> 手動</>}
           </button>
           {!autoUpdate && (
             <button
@@ -710,7 +719,7 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
               onClick={() => updatePreview()}
               title="プレビューを更新"
             >
-              {pendingUpdate ? '🔴 更新' : '✓ 最新'}
+              {pendingUpdate ? <><Circle20Regular className="pending-icon" /> 更新</> : <><Checkmark20Regular /> 最新</>}
             </button>
           )}
         </div>
