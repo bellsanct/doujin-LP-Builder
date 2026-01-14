@@ -70,6 +70,55 @@
 }
 
 /* ==========================================
+   ダークテーマ
+   ========================================== */
+
+[data-theme="dark"] {
+  /* Core Colors - Dark neutral palette */
+  --surface-primary: #1e1e1e;
+  --surface-secondary: #252526;
+  --surface-tertiary: #2d2d30;
+  --surface-elevated: #323233;
+
+  /* Panel Headers - Lighter for contrast in dark mode */
+  --header-bg: #3c3c3c;
+  --header-text: #e0e0e0;
+  --header-text-secondary: #9d9d9d;
+
+  /* Text Colors */
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-tertiary: #707070;
+  --text-disabled: #505050;
+
+  /* Accent Colors - Slightly brighter for dark mode */
+  --accent-primary: #3aa6ff;
+  --accent-primary-hover: #5cb8ff;
+  --accent-primary-subtle: rgba(58, 166, 255, 0.12);
+  --accent-secondary: #9d7cff;
+
+  /* Semantic Colors */
+  --success: #3bc16c;
+  --success-subtle: rgba(59, 193, 108, 0.12);
+  --warning: #ffc21a;
+  --warning-subtle: rgba(255, 194, 26, 0.12);
+  --error: #ff6b4d;
+  --error-subtle: rgba(255, 107, 77, 0.12);
+
+  /* Borders */
+  --border-default: #3c3c3c;
+  --border-subtle: #323233;
+  --border-strong: #505050;
+  --border-focus: var(--accent-primary);
+
+  /* Shadows - More pronounced for dark mode */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================
    ブロックエディター - 3ペイン構造
    ========================================== */
 
@@ -324,11 +373,11 @@
   color: var(--header-text);
 }
 
-/* 折りたたみ時の展開ボタン */
+/* 折りたたみ時の展開ボタン（サイズ統一） */
 .panel-toggle.expand {
-  width: 28px;
-  height: 28px;
-  font-size: var(--font-sm);
+  width: 24px;
+  height: 24px;
+  font-size: var(--font-xs);
   background: var(--header-bg);
   color: var(--header-text);
 }

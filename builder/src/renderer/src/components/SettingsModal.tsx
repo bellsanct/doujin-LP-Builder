@@ -117,6 +117,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onOpenChange
       localStorage.setItem('app-theme', settings.theme);
       localStorage.setItem('app-log-folder', settings.logFolderPath);
 
+      // Dispatch custom event to notify ThemeProvider of theme change
+      window.dispatchEvent(new CustomEvent('theme-changed'));
+
       // Encrypt and save Netlify API key
       if (settings.netlifyApiKey && window.electronAPI?.encryptString) {
         try {

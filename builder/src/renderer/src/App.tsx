@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import { BlockEditor } from './components/BlockEditor';
 import { Button, Title1, Title3 } from '@fluentui/react-components';
@@ -6,6 +6,7 @@ import { PaintBrush24Regular, Save24Regular, Play24Regular, FolderOpen24Regular,
 import type { Project } from '../../types/block-system';
 import { I18nProvider } from './components/I18nProvider';
 import { useTranslation } from './i18n';
+import { SettingsModal } from './components/SettingsModal';
 
 // デフォルトのプロジェクト設定
 const DEFAULT_GLOBAL_SETTINGS: Project['globalSettings'] = {
@@ -32,6 +33,24 @@ function AppContent() {
   const { t } = useTranslation();
   const [project, setProject] = useState<Project | null>(null);
   const [projectFilePath, setProjectFilePath] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Listen for menu-open-settings IPC event from Electron main process
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      setSettingsOpen(true);
+    };
+
+    // Register IPC listener for menu events
+    let cleanup: (() => void) | undefined;
+    if (window.electronAPI?.onMenuEvent) {
+      cleanup = window.electronAPI.onMenuEvent('menu-open-settings', handleOpenSettings);
+    }
+
+    return () => {
+      cleanup?.();
+    };
+  }, []);
 
   const handleLoadTemplate = async () => {
     try {
@@ -249,6 +268,7 @@ function AppContent() {
             <p>テンプレート: .dlpt / プロジェクト: .dlpt, .zip</p>
           </div>
         </div>
+        <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
     );
   }
@@ -285,6 +305,7 @@ function AppContent() {
       <div className="app-content">
         <BlockEditor project={project} onChange={handleProjectChange} />
       </div>
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

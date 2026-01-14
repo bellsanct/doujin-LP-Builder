@@ -2,7 +2,20 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { FluentProvider, webLightTheme } from '@fluentui/react-components';
+import { FluentProvider } from '@fluentui/react-components';
+import { ThemeProvider, useTheme } from './components/ThemeProvider';
+
+/**
+ * Wrapper component that uses the theme context to provide the correct Fluent theme
+ */
+const ThemedApp: React.FC = () => {
+  const { fluentTheme } = useTheme();
+  return (
+    <FluentProvider theme={fluentTheme}>
+      <App />
+    </FluentProvider>
+  );
+};
 
 // Hook: mirror console.* to app.log via electronAPI.log
 (() => {
@@ -90,8 +103,8 @@ import { FluentProvider, webLightTheme } from '@fluentui/react-components';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <FluentProvider theme={webLightTheme}>
-      <App />
-    </FluentProvider>
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
   </React.StrictMode>
 );
