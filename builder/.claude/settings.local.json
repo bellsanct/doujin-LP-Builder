@@ -24,7 +24,9 @@
       "Bash(npm install:*)",
       "Bash(npm uninstall:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")"
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

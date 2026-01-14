@@ -138,9 +138,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
       return;
     }
 
-    // ブロックを削除して挿入
+    // ブロックを削除
     const [draggedBlock] = blocks.splice(draggedIndex, 1);
-    blocks.splice(targetIndex, 0, draggedBlock);
+
+    // spliceでdraggedIndexの要素を削除した後、targetIndexより後ろの要素は1つずつ前にずれる
+    // そのため、draggedIndex < targetIndex の場合は調整が必要
+    const adjustedTargetIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+
+    // 調整後のインデックスに挿入
+    blocks.splice(adjustedTargetIndex, 0, draggedBlock);
 
     // orderプロパティを更新
     blocks.forEach((block, i) => {

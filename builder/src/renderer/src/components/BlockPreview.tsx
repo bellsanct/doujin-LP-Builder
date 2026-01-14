@@ -441,105 +441,133 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
   ${blocksHTML}
 
   <script>
-    console.log('[iframe] Template:', '${project.template}');
-    console.log('[iframe] CSS loaded:', ${templateCSS.length > 0});
-    console.log('[iframe] Blocks count:', document.querySelectorAll('[data-block-id]').length);
+    (function() {
+      'use strict';
 
-    // 全ブロックをドラッグ可能にする
-    document.querySelectorAll('[data-block-id]').forEach(block => {
-      block.setAttribute('draggable', 'true');
-    });
+      console.log('[iframe] Template:', '${project.template}');
+      console.log('[iframe] CSS loaded:', ${templateCSS.length > 0});
+      console.log('[iframe] Blocks count:', document.querySelectorAll('[data-block-id]').length);
 
-    let draggedElement = null;
+      // 全ブロックをドラッグ可能にする
+      const blocks = document.querySelectorAll('[data-block-id]');
+      blocks.forEach(block => {
+        block.setAttribute('draggable', 'true');
+        // ブロック内の子要素もドラッグ可能にしないようにする
+        block.querySelectorAll('*').forEach(child => {
+          child.setAttribute('draggable', 'false');
+        });
+      });
 
-    // ドラッグ開始
-    document.addEventListener('dragstart', (e) => {
-      const blockElement = e.target.closest('[data-block-id]');
-      if (blockElement) {
-        draggedElement = blockElement;
-        blockElement.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', blockElement.getAttribute('data-block-id'));
-      }
-    });
+      let draggedElement = null;
+      let isDragging = false;
 
-    // ドラッグ終了
-    document.addEventListener('dragend', (e) => {
-      const blockElement = e.target.closest('[data-block-id]');
-      if (blockElement) {
-        blockElement.classList.remove('dragging');
+      // ドラッグ開始
+      document.addEventListener('dragstart', (e) => {
+        const blockElement = e.target.closest('[data-block-id]');
+        if (blockElement) {
+          isDragging = true;
+          draggedElement = blockElement;
+          blockElement.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', blockElement.getAttribute('data-block-id'));
+          console.log('[iframe] Drag start:', blockElement.getAttribute('data-block-id'));
+        }
+      });
+
+      // ドラッグ終了
+      document.addEventListener('dragend', (e) => {
+        isDragging = false;
         // すべてのdrag-overクラスを削除
         document.querySelectorAll('[data-block-id]').forEach(el => {
+          el.classList.remove('dragging');
           el.classList.remove('drag-over');
         });
-      }
-      draggedElement = null;
-    });
+        draggedElement = null;
+        console.log('[iframe] Drag end');
+      });
 
-    // ドラッグオーバー
-    document.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      const blockElement = e.target.closest('[data-block-id]');
-      if (blockElement && blockElement !== draggedElement) {
-        e.dataTransfer.dropEffect = 'move';
-        // すべてのdrag-overクラスを削除してから追加
+      // ドラッグオーバー
+      document.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const blockElement = e.target.closest('[data-block-id]');
+        if (blockElement && blockElement !== draggedElement) {
+          e.dataTransfer.dropEffect = 'move';
+          // すべてのdrag-overクラスを削除してから追加
+          document.querySelectorAll('[data-block-id]').forEach(el => {
+            if (el !== blockElement) el.classList.remove('drag-over');
+          });
+          blockElement.classList.add('drag-over');
+        }
+      });
+
+      // ドラッグ離脱
+      document.addEventListener('dragleave', (e) => {
+        const blockElement = e.target.closest('[data-block-id]');
+        if (blockElement && e.relatedTarget && !blockElement.contains(e.relatedTarget)) {
+          blockElement.classList.remove('drag-over');
+        }
+      });
+
+      // ドロップ
+      document.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const targetElement = e.target.closest('[data-block-id]');
+        if (targetElement && draggedElement && targetElement !== draggedElement) {
+          const draggedId = draggedElement.getAttribute('data-block-id');
+          const targetId = targetElement.getAttribute('data-block-id');
+
+          console.log('[iframe] Drop:', draggedId, 'to', targetId);
+
+          // 親ウィンドウに並び替えを通知
+          window.parent.postMessage({
+            type: 'block-reorder',
+            draggedBlockId: draggedId,
+            targetBlockId: targetId
+          }, '*');
+        }
+
+        // クリーンアップ
         document.querySelectorAll('[data-block-id]').forEach(el => {
           el.classList.remove('drag-over');
+          el.classList.remove('dragging');
         });
-        blockElement.classList.add('drag-over');
-      }
-    });
+        draggedElement = null;
+        isDragging = false;
+      });
 
-    // ドラッグ離脱
-    document.addEventListener('dragleave', (e) => {
-      const blockElement = e.target.closest('[data-block-id]');
-      if (blockElement) {
-        blockElement.classList.remove('drag-over');
-      }
-    });
+      // ブロッククリック時に親ウィンドウに通知（ドラッグ中は無視）
+      document.addEventListener('click', (e) => {
+        // ドラッグ終了直後のクリックを防ぐ
+        if (isDragging) return;
 
-    // ドロップ
-    document.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const targetElement = e.target.closest('[data-block-id]');
-      if (targetElement && draggedElement && targetElement !== draggedElement) {
-        const draggedId = draggedElement.getAttribute('data-block-id');
-        const targetId = targetElement.getAttribute('data-block-id');
+        const blockElement = e.target.closest('[data-block-id]');
+        if (blockElement) {
+          const blockId = blockElement.getAttribute('data-block-id');
+          console.log('[iframe] Click:', blockId);
+          window.parent.postMessage({ type: 'block-select', blockId }, '*');
+        }
+      });
 
-        // 親ウィンドウに並び替えを通知
-        window.parent.postMessage({
-          type: 'block-reorder',
-          draggedBlockId: draggedId,
-          targetBlockId: targetId
-        }, '*');
-
-        targetElement.classList.remove('drag-over');
-      }
-    });
-
-    // ブロッククリック時に親ウィンドウに通知
-    document.addEventListener('click', (e) => {
-      const blockElement = e.target.closest('[data-block-id]');
-      if (blockElement) {
-        const blockId = blockElement.getAttribute('data-block-id');
-        window.parent.postMessage({ type: 'block-select', blockId }, '*');
-      }
-    });
-
-    // 選択状態の更新を受け取る
-    window.addEventListener('message', (e) => {
-      if (e.data.type === 'update-selection') {
-        document.querySelectorAll('[data-block-id]').forEach(el => {
-          el.classList.remove('selected');
-        });
-        if (e.data.blockId) {
-          const selectedEl = document.querySelector(\`[data-block-id="\${e.data.blockId}"]\`);
-          if (selectedEl) {
-            selectedEl.classList.add('selected');
+      // 選択状態の更新を受け取る
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'update-selection') {
+          console.log('[iframe] Update selection:', e.data.blockId);
+          document.querySelectorAll('[data-block-id]').forEach(el => {
+            el.classList.remove('selected');
+          });
+          if (e.data.blockId) {
+            const selectedEl = document.querySelector('[data-block-id="' + e.data.blockId + '"]');
+            if (selectedEl) {
+              selectedEl.classList.add('selected');
+            }
           }
         }
-      }
-    });
+      });
+
+      console.log('[iframe] Event handlers initialized');
+    })();
   </script>
 </body>
 </html>
@@ -552,10 +580,12 @@ export const BlockPreview: React.FC<BlockPreviewProps> = ({
     iframeDoc.write(html);
     iframeDoc.close();
 
-    // 選択状態を更新
-    if (selectedBlockId) {
-      iframe.contentWindow?.postMessage({ type: 'update-selection', blockId: selectedBlockId }, '*');
-    }
+    // 選択状態を更新（iframeのスクリプト実行を待つため少し遅延）
+    setTimeout(() => {
+      if (selectedBlockId && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'update-selection', blockId: selectedBlockId }, '*');
+      }
+    }, 50);
 
     // 更新完了
     setPendingUpdate(false);
