@@ -394,17 +394,17 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
       {/* 右パネル: 設定パネル */}
       <div className={`block-settings ${rightPanelCollapsed ? 'collapsed' : ''}`}>
         <div className="settings-header">
-          <div className="settings-header-top">
-            {rightPanelCollapsed ? (
-              <button
-                className="panel-toggle expand"
-                onClick={() => setRightPanelCollapsed(false)}
-                title="展開"
-              >
-                <ChevronLeft20Regular />
-              </button>
-            ) : (
-              <>
+          {rightPanelCollapsed ? (
+            <button
+              className="panel-toggle expand"
+              onClick={() => setRightPanelCollapsed(false)}
+              title="展開"
+            >
+              <ChevronLeft20Regular />
+            </button>
+          ) : (
+            <>
+              <div className="settings-header-top">
                 <button
                   className="panel-toggle"
                   onClick={(e) => {
@@ -416,23 +416,23 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ project, onChange }) =
                   <ChevronRight20Regular />
                 </button>
                 <h3>設定</h3>
-              </>
-            )}
-          </div>
-          <div className="settings-toggle">
-            <button
-              className={settingsView === 'block' ? 'active' : ''}
-              onClick={() => setSettingsView('block')}
-            >
-              ブロック
-            </button>
-            <button
-              className={settingsView === 'global' ? 'active' : ''}
-              onClick={() => setSettingsView('global')}
-            >
-              共通
-            </button>
-          </div>
+              </div>
+              <div className="settings-toggle">
+                <button
+                  className={settingsView === 'block' ? 'active' : ''}
+                  onClick={() => setSettingsView('block')}
+                >
+                  ブロック
+                </button>
+                <button
+                  className={settingsView === 'global' ? 'active' : ''}
+                  onClick={() => setSettingsView('global')}
+                >
+                  共通
+                </button>
+              </div>
+            </>
+          )}
         </div>
         <div className="settings-content">
           {settingsView === 'global' ? (
