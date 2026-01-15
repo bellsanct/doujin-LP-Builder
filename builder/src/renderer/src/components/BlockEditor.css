@@ -169,10 +169,13 @@
 
 .block-palette.collapsed .palette-header {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   padding: var(--space-md) 0;
   background: var(--header-bg);
+  height: auto;
+  min-height: auto;
 }
 
 .palette-header {
@@ -532,10 +535,13 @@
 
 .block-settings.collapsed .settings-header {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   padding: var(--space-md) 0;
   background: var(--header-bg);
+  height: auto;
+  min-height: auto;
 }
 
 .settings-header {
